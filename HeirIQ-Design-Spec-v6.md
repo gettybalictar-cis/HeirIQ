@@ -1,7 +1,7 @@
-# HeirIQ — Design Specification v5.0
+# HeirIQ — Design Specification v6.0
 **A self-paced Philippine estate planning discovery & gap assessment tool.**
 Owner: Getty Balictar. Standalone product, separate from SparkZight. Built for Claude Code implementation.
-*v5 supersedes v4 — adds foreign-currency entry and automatic peso conversion for Financial Accounts (LB-10). Legal citations referenced by short code (e.g. **LB-4**) point to `HeirIQ-Legal-Basis-Appendix-v1.md`, now at v3.0.*
+*v6 supersedes v5 — adds a minor-status question per child in Section B, needed to correctly compute EJS eligibility (a gap surfaced by the Claude Code build session — see Build Brief v6 §3.5). Legal citations referenced by short code (e.g. **LB-4**) point to `HeirIQ-Legal-Basis-Appendix-v1.md`, at v3.0.*
 
 ---
 
@@ -40,9 +40,9 @@ Screens 0, 1, A, D, E, Results, and Confirmation are unchanged from v2 — see t
 
 ### Section B — Family Structure (Updated for v4)
 
-- Legitimate children: label, birth order (up to 10)
-- **Adopted children (new):** same fields as legitimate children (label, birth order, up to 10) — a separate array in the data model, but treated identically to legitimate children in the legitime calculation (LB-9). Copy: *"Include any children you've legally adopted — under Philippine law, they have the same inheritance rights as your biological legitimate children."*
-- Illegitimate children: label, birth order, qualifying question ("Is this child biologically yours, your spouse's, or both of yours?" — relevance test, LB-5)
+- Legitimate children: label, birth order, **"Is this child currently under 18?"** (Y/N — new for v6, needed for EJS eligibility, see Build Brief §3.5) (up to 10)
+- **Adopted children (new):** same fields as legitimate children (label, birth order, under-18 status, up to 10) — a separate array in the data model, but treated identically to legitimate children in the legitime calculation (LB-9). Copy: *"Include any children you've legally adopted — under Philippine law, they have the same inheritance rights as your biological legitimate children."*
+- Illegitimate children: label, birth order, under-18 status, qualifying question ("Is this child biologically yours, your spouse's, or both of yours?" — relevance test, LB-5)
 - Aliases/nicknames supported for privacy (unchanged from v2)
 - Trip-wires: predeceased child with descendants (representation), disputed/unrecognized filiation — both deferred, flow continues (unchanged from v2)
 - Living legitimate parents (Y/N) — unchanged from v2
@@ -174,6 +174,8 @@ Decisions 1–17 unchanged from v2. New this revision:
 | 22 | Disinheritance-intent flag, joint-account explainer, reserva troncal trip-wire — evaluated, deferred | Retirement benefits dropped entirely (low HNW/UHNW relevance); the other three deprioritized this round, not ruled out permanently |
 | 23 | Foreign currency accounts captured in native currency, auto-converted to PHP via BSP reference rate | Matches worldwide estate inclusion (LB-10) for the assumed PH citizen/resident-alien estate owner; easier and more accurate for clients to enter in the currency they actually think in |
 | 24 | Donor's-tax citizenship/situs complexity excluded from scope | Real but genuinely separate rule set (NIRC §98/§104); deferred alongside the existing dual-citizenship exclusion |
+| 25 | Per-child minor-status question added to Section B | EJS eligibility depended on this since v1 but the field never actually existed — surfaced by the Claude Code build session itself |
+| 26 | Testate floor formula corrected to include adopted children in the divisor | LB-9 was wired into intestate mode only; testate mode was silently excluding adopted children until caught by Test Scenario 5 |
 
 ---
 

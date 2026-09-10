@@ -1,5 +1,5 @@
-# HeirIQ — Test Scenarios v1.0
-**Four hand-worked scenarios to validate the calculation engine before/during Claude Code implementation.** Each targets a distinct mechanic discussed and corrected during design. Use these as literal unit-test fixtures — inputs in, expected outputs out.
+# HeirIQ — Test Scenarios v2.0
+**Five hand-worked scenarios to validate the calculation engine.** v2 adds Scenario 5 (testate mode), which exposed a real gap — the testate floor formula hadn't been updated to include adopted children (LB-9) after that rule was added. Fixed in Build Brief v6, §3.5.
 
 ---
 
@@ -129,6 +129,31 @@
 | Value per unit | ₱18,000,000 ÷ 4 = ₱4,500,000 |
 | **Each legitimate child** | **₱9,000,000** (spouse's would-be share reallocates entirely to the children) |
 | Net-profit forfeiture (LB-4, Mechanic A) | **Descriptive flag only** — no dollar amount computed or subtracted anywhere above. If the engine ever produces a number for this, that's a bug. |
+
+---
+
+## Scenario 5 — Testate Mode, All Heir Classes at Once
+
+**Purpose:** the scenario that was missing — validates the testate floor calculation (LB-5, Build Brief §3.5), and specifically that adopted children are correctly included in the legitimate-child pool divisor, not silently dropped.
+
+**Inputs:**
+- Estate owner **has a will** (`existingWill: true`) → testate mode
+- Heirs: 2 legitimate children, **1 adopted child**, 1 illegitimate child (`biologicalParent: self`), spouse alive
+- Net hereditary estate (collated base): ₱24,000,000 — no prior gifts, kept simple to isolate the floor formula
+- No liabilities
+
+**Expected output — these are guaranteed MINIMUMS only, not the actual will's distribution:**
+| Step | Value |
+|---|---|
+| Legitime pool (1/2 of collated base) | ₱12,000,000 |
+| Divisor (legitimate + adopted children — LB-5 + LB-9, no distinction) | 2 + 1 = **3** |
+| **Each legitimate child's floor** | **₱4,000,000** |
+| **Adopted child's floor** | **₱4,000,000** — sanity check: identical to a legitimate child's, confirming LB-9 is correctly wired into testate mode, not just intestate |
+| **Spouse's floor** (equal to one legitimate/adopted child's floor) | **₱4,000,000** |
+| **Illegitimate child's floor** (half of a legitimate/adopted child's) | **₱2,000,000** |
+| Free portion (testator's discretion — tool does not model actual will content) | ₱6,000,000 |
+| Reconciliation check | 4M×2 (legit) + 4M (adopted) + 4M (spouse) + 2M (illegitimate) + 6M (free) = ₱24,000,000 ✓ |
+| **Tool output note** | *"These are the minimum amounts your will must give each heir. This tool cannot verify your actual will's distribution — have Getty review your will's terms against this floor."* |
 
 ---
 

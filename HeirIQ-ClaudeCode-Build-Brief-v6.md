@@ -1,6 +1,6 @@
-# HeirIQ — Claude Code Build Brief v5.0
+# HeirIQ — Claude Code Build Brief v6.0
 **Translating the design spec into architecture, data model, calculation logic, and build sequence.**
-*v5 supersedes v4 — adds foreign-currency entry with BSP-rate conversion for Financial Accounts (LB-10). Legal Basis Appendix is now at v3.0 — see `HeirIQ-Legal-Basis-Appendix-v1.md` (filename retained, content updated).*
+*v6 supersedes v5 — two fixes surfaced by the Claude Code build session itself: (1) the testate floor formula (§3.5) never included adopted children after LB-9 was added — fixed here; (2) EJS eligibility needs a per-heir minor-status field that didn't exist in the data model — added as `isMinor` below. Legal Basis Appendix remains at v3.0.*
 
 ---
 
@@ -14,13 +14,13 @@ See v2 for full table (framework, hosting, backend, access control, email sender
 
 ## 2. Data Model — Heirs and Assets Sections Updated
 
-### 2a. Heirs (updated for v4 — adds `adoptedChildren`)
+### 2a. Heirs (updated for v6 — adds `isMinor` per child, needed for EJS eligibility, see §3.5)
 
 ```js
 heirs: {
-  legitimateChildren: [{ id, label, birthOrder }],    // max 10
-  adoptedChildren: [{ id, label, birthOrder }],       // NEW, max 10 — LB-9, joins legitimateChildren's unit pool, see §3.6
-  illegitimateChildren: [{ id, label, birthOrder, biologicalParent: "self" | "spouse" | "both" }],  // LB-5
+  legitimateChildren: [{ id, label, birthOrder, isMinor: bool }],    // max 10
+  adoptedChildren: [{ id, label, birthOrder, isMinor: bool }],       // max 10 — LB-9, joins legitimateChildren's unit pool, see §3.6
+  illegitimateChildren: [{ id, label, birthOrder, isMinor: bool, biologicalParent: "self" | "spouse" | "both" }],  // LB-5
   livingParents: bool,
   hasPredeceasedChildWithDescendants: bool,
   hasDisputedFiliationClaim: bool
@@ -182,7 +182,32 @@ if totalNeededFromRemainingEstate > (estate value remaining at time of death, af
     // not the raw difference between gift amounts
 ```
 
-All other calculation engine sections (§3.1, 3.3, 3.5, 3.7, 3.9) are unchanged from v2 — see that document for the testate floor calculation and advisory-only flags.
+### 3.5 Compliance Flags and Testate Floor — CORRECTED for v6
+
+**EJS eligibility — now computed from the heir data directly, not a separate external input:**
+```
+hasMinorHeirs = (any legitimateChildren, adoptedChildren, or illegitimateChildren entry has isMinor == true)
+ejsEligible = (existingWill == false) AND (no unresolved liabilities) AND (NOT hasMinorHeirs)
+```
+This replaces the earlier version, which took `hasMinorHeirs` as an unexplained external input with no corresponding field in the data model — flagged correctly during the Claude Code build; the `isMinor` field added in §2a closes this gap.
+
+**Testate floor — CORRECTED to include adopted children (LB-9):**
+```
+if mode == "testate":
+    legitimatePool = 0.5 * collatedBase
+    divisor = count(legitimateChildren) + count(adoptedChildren)   // FIXED: previously legitimateChildren only
+    perLegitimateOrAdoptedChildFloor = legitimatePool / divisor
+    spouseFloor = perLegitimateOrAdoptedChildFloor (if concurring with at least one legitimate/adopted child)
+    perIllegitimateChildFloor = 0.5 * perLegitimateOrAdoptedChildFloor
+
+    // Do NOT model the will's actual distribution — not captured as an input.
+    // Output: "These are the minimum amounts your will must give each heir. This tool
+    // cannot verify your actual will's distribution — have Getty review your will's
+    // terms against this floor."
+```
+Validated against Test Scenario 5 (`HeirIQ-Test-Scenarios-v2.md`) — a legitimate/adopted/illegitimate/spouse mix, confirming the adopted child's floor is identical to a legitimate child's.
+
+All other calculation engine sections (§3.1, 3.3, 3.7, 3.9) are unchanged from prior versions — see v2 for full detail on sections not reproduced here.
 
 ---
 
