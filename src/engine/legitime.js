@@ -106,35 +106,38 @@ export function applyCollationCatchUp({ entitlements, priorGifts, remainingEstat
 }
 
 // ---------------------------------------------------------------------------
-// §3.5 — Testate: Legitime Floor + Free Portion (LB-5).
+// §3.5 — Testate: Legitime Floor + Free Portion (LB-5). CORRECTED for v6.
 //
 // Per LB-5's interpretation, the tool cannot verify an actual will's terms, so
 // testate mode only ever computes the GUARANTEED MINIMUM FLOOR per heir — never
-// a full simulated distribution. Not exercised by any of the four v1 test
-// scenarios (all are intestate); treat this as a first-pass floor calculation
-// to be revisited once testate cases are hand-worked.
+// a full simulated distribution. The divisor for the legitime pool previously
+// counted legitimateChildren only, silently dropping adopted children even
+// though LB-9 gives them no-distinction standing — caught by Test Scenario 5
+// (v2) and fixed here: the divisor is legitimateChildren + adoptedChildren.
 // ---------------------------------------------------------------------------
 
-export function calculateTestateLegitimeFloor({ netHereditaryEstate, heirs, spouseEligible }) {
+export function calculateTestateLegitimeFloor({ collatedBase, heirs, spouseEligible }) {
   const numLegitimateUnitChildren = heirs.legitimateChildren.length + heirs.adoptedChildren.length; // Art. 979, LB-9
   const illegitimateSelfCount = countDecedentsIllegitimateChildren(heirs.illegitimateChildren);
 
-  // Art. 887/888: legitimate (and adopted, LB-9) children collectively get a 1/2 floor.
-  const legitimateChildrenPool = 0.5 * netHereditaryEstate;
-  const perLegitimateChildFloor = numLegitimateUnitChildren > 0 ? legitimateChildrenPool / numLegitimateUnitChildren : 0;
-  const freePortion = netHereditaryEstate - legitimateChildrenPool;
+  // Art. 887/888: legitimate (and adopted, LB-9 — no distinction) children collectively get a 1/2 floor.
+  const legitimateChildrenPool = 0.5 * collatedBase;
+  const perLegitimateOrAdoptedChildFloor = numLegitimateUnitChildren > 0 ? legitimateChildrenPool / numLegitimateUnitChildren : 0;
 
-  // Art. 892/996: spouse concurring with legitimate children floors at one child's share.
-  // Art. 895: an illegitimate child's floor is half a legitimate child's share.
-  const spouseFloor = spouseEligible ? perLegitimateChildFloor : 0;
-  const perIllegitimateChildFloor = illegitimateSelfCount > 0 ? perLegitimateChildFloor / 2 : 0;
+  // Art. 892/996: spouse concurring with legitimate/adopted children floors at one child's share.
+  // Art. 895: an illegitimate child's floor is half a legitimate/adopted child's share.
+  // Both draw FROM the free portion, not on top of it (LB-5) — so they reduce what's left
+  // for the testator's own discretion, rather than adding to the legitimate children's pool.
+  const spouseFloor = spouseEligible ? perLegitimateOrAdoptedChildFloor : 0;
+  const perIllegitimateChildFloor = illegitimateSelfCount > 0 ? perLegitimateOrAdoptedChildFloor / 2 : 0;
+  const freePortion = collatedBase - legitimateChildrenPool - spouseFloor - perIllegitimateChildFloor * illegitimateSelfCount;
 
   return {
     legitimateChildrenPool,
-    perLegitimateChildFloor,
+    perLegitimateOrAdoptedChildFloor,
     freePortion,
     spouseFloor,
     perIllegitimateChildFloor,
-    note: "Floor-only per LB-5 — guarantees a minimum, does not verify or simulate an actual will's distribution.",
+    note: "These are the minimum amounts your will must give each heir. This tool cannot verify your actual will's distribution — have Getty review your will's terms against this floor.",
   };
 }

@@ -13,3 +13,17 @@ export function isDecedentsBiologicalChild(illegitimateChild) {
 export function countDecedentsIllegitimateChildren(illegitimateChildren = []) {
   return illegitimateChildren.filter(isDecedentsBiologicalChild).length;
 }
+
+/**
+ * Build Brief §3.5 (v6): EJS eligibility is computed from the heir data directly —
+ * any legitimate, adopted, or illegitimate child entry with `isMinor === true`
+ * disqualifies the estate from extrajudicial settlement.
+ */
+export function hasAnyMinorHeir(heirs) {
+  const allChildren = [
+    ...(heirs.legitimateChildren || []),
+    ...(heirs.adoptedChildren || []),
+    ...(heirs.illegitimateChildren || []),
+  ];
+  return allChildren.some((child) => child.isMinor === true);
+}

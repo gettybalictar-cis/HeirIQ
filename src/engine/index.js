@@ -1,5 +1,5 @@
 // HeirIQ calculation engine — standalone module, no UI dependency.
-// Orchestrates the full pipeline described in HeirIQ-ClaudeCode-Build-Brief-v5.md §3.
+// Orchestrates the full pipeline described in HeirIQ-ClaudeCode-Build-Brief-v6.md §3.
 import { calculateGrossEstate } from "./grossEstate.js";
 import { calculateFamilyHomeDeduction, calculateNetTaxableEstate } from "./deductions.js";
 import { calculateEstateTax, requiresCPACertification } from "./estateTax.js";
@@ -13,12 +13,13 @@ import { STANDARD_DEDUCTION } from "./constants.js";
  * @param {string} input.maritalRegime - "ACP" | "CPG" | "forced_separation" | "per_prenup"
  *   (see propertyRegime.js#resolveMaritalRegime to derive this from marriage date/history)
  * @param {object} input.heirs - { legitimateChildren, adoptedChildren, illegitimateChildren, spouseAlive }
+ *   per Build Brief §2a (v6) — each child entry ({ id, label, birthOrder, isMinor }) now
+ *   carries `isMinor`, which drives EJS eligibility (§3.5) directly off the heir data.
  * @param {Array} input.assets - per Build Brief §2b data model
  * @param {Array} [input.liabilities] - [{ id, value }]
  * @param {Array} [input.priorGifts] - [{ heirId, valueAtTimeOfGift, date }]
  * @param {boolean} [input.hasWill]
  * @param {object|null} [input.disqualification] - { mechanism: "legal_separation"|"annulment_bad_faith", offendingParty: "spouse"|"decedent" }
- * @param {boolean} [input.hasMinorHeirs]
  * @param {boolean} [input.hasArt1080Partition] - testate mode only; suppresses the co-ownership flag when a will already partitions assets to avoid it
  * @param {number} [input.remainingEstateAtDeath] - overrides netHereditaryEstate as the pool available for collation catch-up, for callers who already know this figure independent of itemized assets (see Test Scenario 3)
  */
@@ -31,7 +32,6 @@ export function calculateEstate(input) {
     priorGifts = [],
     hasWill = false,
     disqualification = null,
-    hasMinorHeirs = false,
     hasArt1080Partition = false,
     remainingEstateAtDeath,
   } = input;
@@ -48,7 +48,7 @@ export function calculateEstate(input) {
   const netTaxableEstate = calculateNetTaxableEstate(grossEstate, familyHomeDeduction, liabilitiesTotal);
   const estateTax = calculateEstateTax(netTaxableEstate);
   const cpaCertificationRequired = requiresCPACertification(grossEstate);
-  const ejsEligible = isEJSEligible({ hasWill, liabilities, hasMinorHeirs });
+  const ejsEligible = isEJSEligible({ hasWill, liabilities, heirs });
 
   // Legitime pool: net hereditary estate (assets minus debts, LB-6), plus collated gifts.
   const netHereditaryEstate = grossEstate - liabilitiesTotal;
@@ -76,7 +76,7 @@ export function calculateEstate(input) {
     legitime = { mode: "intestate", units, valuePerUnit, entitlements: detail, totalNeededFromRemainingEstate };
   } else {
     // §3.5 — Testate: floor only, per LB-5 (not a full will simulation).
-    legitime = { mode: "testate", floor: calculateTestateLegitimeFloor({ netHereditaryEstate, heirs, spouseEligible }) };
+    legitime = { mode: "testate", floor: calculateTestateLegitimeFloor({ collatedBase, heirs, spouseEligible }) };
   }
 
   // §3.8 — Co-ownership risk flag (LB-7)

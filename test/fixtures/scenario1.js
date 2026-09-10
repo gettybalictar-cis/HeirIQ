@@ -5,8 +5,8 @@ export const scenario1Input = {
   disqualification: null,
   heirs: {
     legitimateChildren: [
-      { id: "child-1", label: "Child 1", birthOrder: 1 },
-      { id: "child-2", label: "Child 2", birthOrder: 2 },
+      { id: "child-1", label: "Child 1", birthOrder: 1, isMinor: false },
+      { id: "child-2", label: "Child 2", birthOrder: 2, isMinor: false },
     ],
     adoptedChildren: [],
     illegitimateChildren: [],
