@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HeirIQ — Screen Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,0..100&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --narra-deep:#5A3A22;
+    --narra-soft:#8A6A52;
+    --gold:#B8892E;
+    --ivory:#F6F1E7;
+    --hairline:#E3D7C4;
+    --confirmed:#2E7D6B;
+    --estimated:#7A8B99;
+    --consult:#B5651D;
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:#DDD6C6;
+    font-family:'Source Sans 3', sans-serif;
+    color:var(--narra-deep);
+    padding:32px 16px;
+  }
+  .device-frame{
+    max-width:480px;
+    margin:0 auto 40px auto;
+    background:var(--ivory);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 20px 50px rgba(90,58,34,0.18);
+    border:1px solid var(--hairline);
+  }
+  .nav-tabs{
+    max-width:480px;
+    margin:0 auto 12px auto;
+    display:flex;
+    gap:8px;
+  }
+  .nav-tabs button{
+    flex:1;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid var(--hairline);
+    background:var(--white);
+    color:var(--narra-soft);
+    font-family:'Source Sans 3',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    letter-spacing:0.03em;
+    cursor:pointer;
+  }
+  .nav-tabs button.active{
+    background:var(--narra-deep);
+    color:var(--ivory);
+    border-color:var(--narra-deep);
+  }
+  .screen{display:none; padding:0;}
+  .screen.active{display:block;}
+
+  /* ===== LANDING ===== */
+  .landing{
+    padding:64px 32px 44px 32px;
+    text-align:center;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 35%),
+      radial-gradient(circle at 28% 15%, #FDFBF6 0%, #F6F1E7 55%, #EEE4D0 100%);
+  }
+  .mark{ width:72px; height:72px; margin:0 auto 20px auto; }
+  .brand-name{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:600;
+    font-size:34px;
+    letter-spacing:0.01em;
+    color:var(--narra-deep);
+    margin:0 0 40px 0;
+  }
+  .value-prop{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:23px;
+    line-height:1.4;
+    color:var(--narra-deep);
+    margin:0 0 40px 0;
+  }
+  .cta-primary{
+    display:inline-block;
+    background:var(--gold);
+    color:var(--ivory);
+    font-family:'Source Sans 3', sans-serif;
+    font-weight:600;
+    font-size:16px;
+    letter-spacing:0.02em;
+    border:none;
+    border-radius:6px;
+    padding:16px 40px;
+    cursor:pointer;
+    line-height:1.3;
+  }
+  .cta-primary .sub{
+    display:block;
+    font-size:12px;
+    font-weight:400;
+    opacity:0.85;
+    margin-top:2px;
+  }
+  .attribution{
+    margin-top:32px;
+    font-size:13px;
+    color:var(--narra-soft);
+  }
+  .attribution .name{ font-weight:600; }
+
+  /* ===== RESULTS ===== */
+  .results{ padding:0; }
+  .results-header{
+    background:var(--narra-deep);
+    color:var(--ivory);
+    padding:30px 28px 26px 28px;
+  }
+  .results-header .label{
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    opacity:0.75;
+    margin:0 0 8px 0;
+  }
+  .exposure-row{ display:flex; align-items:center; justify-content:space-between; }
+  .exposure-amount{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:38px;
+    margin:0;
+  }
+  .seal{
+    width:50px; height:50px;
+    border:1.5px solid var(--gold);
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Fraunces', serif;
+    color:var(--gold);
+    font-size:20px;
+    flex-shrink:0;
+  }
+
+  .category{ padding:24px 28px; border-bottom:1px solid var(--hairline); }
+  .category:last-child{ border-bottom:none; }
+  .cat-icon-row{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .cat-icon{ width:22px; height:22px; flex-shrink:0; }
+  .cat-header{ display:flex; justify-content:space-between; align-items:baseline; flex:1; }
+  .cat-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:19px;
+    color:var(--narra-deep);
+    margin:0;
+  }
+  .tag{
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    padding:4px 10px;
+    border-radius:20px;
+    color:var(--white);
+    white-space:nowrap;
+  }
+  .tag.confirmed{ background:var(--confirmed); }
+  .tag.estimated{ background:var(--estimated); }
+  .tag.consult{ background:var(--consult); }
+
+  .cat-stat{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:22px;
+    color:var(--narra-deep);
+    margin:6px 0 4px 0;
+  }
+  .cat-caption{ font-size:15px; line-height:1.5; color:#3A2B1E; margin:0 0 12px 0; }
+  .cat-fix{
+    font-size:14.5px;
+    line-height:1.5;
+    color:var(--narra-soft);
+    border-left:2px solid var(--gold);
+    padding-left:10px;
+    margin:0;
+  }
+  .cat-fix b{ color:var(--narra-deep); }
+
+  /* stacked bar for collation example */
+  .bar-row{ margin-top:16px; }
+  .bar-label{ display:flex; justify-content:space-between; font-size:14px; color:var(--narra-soft); margin-bottom:5px; font-weight:600; }
+  .bar-track{ height:18px; border-radius:3px; overflow:hidden; display:flex; background:var(--hairline); }
+  .bar-received{ background:var(--narra-soft); }
+  .bar-remaining{ background:var(--gold); }
+  .bar-legend{ display:flex; gap:16px; margin-top:8px; font-size:12.5px; color:var(--narra-soft); }
+  .bar-legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .dot{ width:9px; height:9px; border-radius:2px; display:inline-block; }
+
+  .disclaimer{
+    padding:18px 28px 26px 28px;
+    font-size:11.5px;
+    line-height:1.5;
+    color:var(--narra-soft);
+    font-style:italic;
+  }
+  .cta-footer{ padding:0 28px 32px 28px; text-align:center; }
+
+  /* ===== FORM SCREENS (Section B) ===== */
+  .form-screen{ padding:0; }
+  .form-topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 24px; border-bottom:1px solid var(--hairline);
+  }
+  .progress-label{ font-size:12.5px; color:var(--narra-soft); }
+  .saved-indicator{ font-size:12px; color:var(--confirmed); font-weight:600; }
+  .progress-track{ height:4px; background:var(--hairline); }
+  .progress-fill{ height:100%; background:var(--gold); }
+
+  .form-body{ padding:26px 24px 32px 24px; }
+  .form-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:22px;
+    color:var(--narra-deep);
+    margin:0 0 8px 0;
+  }
+  .form-helper{ font-size:14.5px; line-height:1.5; color:var(--narra-soft); margin:0 0 24px 0; }
+
+  .child-card{
+    background:var(--white);
+    border:1px solid var(--hairline);
+    border-radius:8px;
+    padding:16px 16px;
+    margin-bottom:12px;
+  }
+  .child-card-row{ display:flex; gap:10px; margin-bottom:10px; }
+  .field{ flex:1; }
+  .field label{ display:block; font-size:12.5px; color:var(--narra-soft); margin-bottom:5px; font-weight:600; }
+  .field input[type=text]{
+    width:100%; padding:10px 12px; border:1px solid var(--hairline);
+    border-radius:6px; font-family:'Source Sans 3',sans-serif; font-size:15px;
+    color:var(--narra-deep); background:var(--ivory);
+  }
+  .minor-row{ display:flex; align-items:center; justify-content:space-between; padding-top:4px; }
+  .minor-row span{ font-size:14px; color:var(--narra-deep); }
+  .minor-yn{ display:flex; gap:8px; }
+  .minor-yn button{
+    padding:8px 18px; border-radius:6px; border:1.5px solid var(--hairline);
+    background:var(--ivory); color:var(--narra-deep); font-family:'Source Sans 3',sans-serif;
+    font-weight:600; font-size:13.5px; cursor:pointer;
+  }
+  .minor-yn button.selected{ background:var(--narra-deep); color:var(--ivory); border-color:var(--narra-deep); }
+  .remove-link{ font-size:12.5px; color:var(--consult); cursor:pointer; text-align:right; margin-top:6px; }
+
+  .add-child-btn{
+    width:100%; padding:12px; border:1.5px dashed var(--gold); border-radius:8px;
+    background:none; color:var(--gold); font-family:'Source Sans 3',sans-serif;
+    font-weight:600; font-size:14.5px; cursor:pointer; margin-bottom:24px;
+  }
+
+  .nav-buttons{ display:flex; gap:12px; margin-top:8px; }
+  .btn-secondary{
+    flex:1; padding:14px; border:1px solid var(--hairline); border-radius:6px;
+    background:none; color:var(--narra-soft); font-family:'Source Sans 3',sans-serif;
+    font-weight:600; font-size:15px; cursor:pointer;
+  }
+  .btn-primary-flow{
+    flex:2; padding:14px; border:none; border-radius:6px;
+    background:var(--gold); color:var(--ivory); font-family:'Source Sans 3',sans-serif;
+    font-weight:600; font-size:15px; cursor:pointer;
+  }
+  .btn-primary-flow.disabled{
+    background:var(--hairline); color:var(--narra-soft); cursor:not-allowed;
+  }
+
+  .yn-question{ text-align:center; padding:28px 8px 8px 8px; }
+  .yn-text{
+    font-family:'Fraunces', serif; font-weight:500; font-size:19px;
+    color:var(--narra-deep); line-height:1.4; margin:0 0 26px 0;
+  }
+  .yn-buttons{ display:flex; gap:14px; justify-content:center; margin-bottom:8px; }
+  .yn-btn{
+    width:120px; padding:18px 0; border-radius:8px; border:1.5px solid var(--hairline);
+    background:var(--white); color:var(--narra-deep); font-family:'Source Sans 3',sans-serif;
+    font-weight:700; font-size:16px; cursor:pointer;
+  }
+  .yn-btn.selected{ background:var(--narra-deep); color:var(--ivory); border-color:var(--narra-deep); }
+
+  .reveal{ margin-top:24px; padding-top:20px; border-top:1px solid var(--hairline); }
+  .qual-select{
+    width:100%; padding:10px 12px; border:1px solid var(--hairline);
+    border-radius:6px; font-family:'Source Sans 3',sans-serif; font-size:15px;
+    color:var(--narra-deep); background:var(--ivory); margin-top:6px;
+  }
+
+  .simple-q{ padding:20px 0; border-bottom:1px solid var(--hairline); }
+  .simple-q:last-child{ border-bottom:none; }
+  .simple-q-text{ font-size:16px; color:var(--narra-deep); margin:0 0 14px 0; line-height:1.4; }
+  .simple-q .yn-buttons{ justify-content:flex-start; }
+  .simple-q .yn-btn{ width:90px; padding:12px 0; font-size:14.5px; }
+</style>
+</head>
+<body>
+
+<div class="nav-tabs">
+  <button class="active" onclick="showScreen('landing')">Landing</button>
+  <button onclick="showScreen('children')">Children</button>
+  <button onclick="showScreen('sensitive')">Sensitive Q</button>
+  <button onclick="showScreen('morequestions')">More Qs</button>
+  <button onclick="showScreen('results')">Results</button>
+</div>
+
+<div class="device-frame">
+
+  <!-- LANDING SCREEN -->
+  <div id="landing" class="screen active landing">
+    <svg class="mark" viewBox="0 0 200 200">
+      <defs>
+        <linearGradient id="narraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#7A5638"/>
+          <stop offset="100%" stop-color="#4A2E1A"/>
+        </linearGradient>
+        <linearGradient id="narraGradSoft" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#A6836A"/>
+          <stop offset="100%" stop-color="#6B4A30"/>
+        </linearGradient>
+        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E0BA6A"/>
+          <stop offset="100%" stop-color="#9C7223"/>
+        </linearGradient>
+        <filter id="iconShadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#4A2E1A" flood-opacity="0.35"/>
+        </filter>
+      </defs>
+      <g filter="url(#iconShadow)">
+        <path d="M112,20 C120,15 140,18 156,32 C168,45 172,58 165,68 C158,76 148,70 145,58 C138,38 120,25 100,22 C90,20 82,18 84,14 Z" fill="url(#narraGrad)"/>
+        <path d="M60,72 C90,58 130,60 158,84 C172,98 176,112 168,122 C160,130 148,122 144,106 C132,80 100,66 68,80 C58,84 54,80 60,72 Z" fill="url(#goldGrad)"/>
+        <path d="M100,96 L52,168 L64,174 L108,104 Z" fill="url(#narraGrad)"/>
+        <path d="M105,96 L92,178 L104,180 L114,100 Z" fill="url(#narraGradSoft)"/>
+        <path d="M110,96 L138,178 L126,180 L100,100 Z" fill="url(#narraGradSoft)"/>
+        <path d="M115,96 L168,164 L158,172 L104,104 Z" fill="url(#narraGrad)"/>
+      </g>
+    </svg>
+    <h1 class="brand-name">HeirIQ</h1>
+
+    <p class="value-prop">See where your estate plan has gaps.</p>
+
+    <button class="cta-primary">Start<span class="sub">About 15 minutes</span></button>
+
+    <p class="attribution"><span class="name">Getty Balictar</span> · Certified Wealth Planner</p>
+  </div>
+
+  <!-- SCREEN: CHILDREN (repeatable add-card pattern) -->
+  <div id="children" class="screen form-screen">
+    <div class="form-topbar">
+      <span class="progress-label">Section 2 of 6 — Family</span>
+      <span class="saved-indicator">Saved ✓</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" style="width:33%"></div></div>
+
+    <div class="form-body">
+      <h2 class="form-title">Your children</h2>
+      <p class="form-helper">You can use a nickname or initials instead of full legal names — this is just to help you keep track as you go.</p>
+
+      <div class="child-card">
+        <div class="child-card-row">
+          <div class="field">
+            <label>Nickname or initials</label>
+            <input type="text" value="Anna">
+          </div>
+          <div class="field" style="max-width:90px;">
+            <label>Birth order</label>
+            <input type="text" value="1">
+          </div>
+        </div>
+        <div class="minor-row">
+          <span>Currently under 18?</span>
+          <div class="minor-yn">
+            <button onclick="toggleYN(this)">Yes</button>
+            <button class="selected" onclick="toggleYN(this)">No</button>
+          </div>
+        </div>
+        <div class="remove-link">Remove</div>
+      </div>
+
+      <div class="child-card">
+        <div class="child-card-row">
+          <div class="field">
+            <label>Nickname or initials</label>
+            <input type="text" value="R.B.">
+          </div>
+          <div class="field" style="max-width:90px;">
+            <label>Birth order</label>
+            <input type="text" value="2">
+          </div>
+        </div>
+        <div class="minor-row">
+          <span>Currently under 18?</span>
+          <div class="minor-yn">
+            <button class="selected" onclick="toggleYN(this)">Yes</button>
+            <button onclick="toggleYN(this)">No</button>
+          </div>
+        </div>
+        <div class="remove-link">Remove</div>
+      </div>
+
+      <button class="add-child-btn">+ Add another child</button>
+
+      <div class="nav-buttons">
+        <button class="btn-secondary" onclick="showScreen('landing')">Back</button>
+        <button class="btn-primary-flow" onclick="showScreen('sensitive')">Continue</button>
+      </div>
+
+      <p style="font-size:11.5px; color:var(--narra-soft); margin-top:18px; margin-bottom:6px;">Reference: Continue button states —</p>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-primary-flow disabled" style="flex:1;" title="Disabled until required fields are complete">Continue (disabled)</button>
+        <button class="btn-primary-flow" style="flex:1;">Continue (enabled)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: SENSITIVE Q (Y/N branch + reveal) -->
+  <div id="sensitive" class="screen form-screen">
+    <div class="form-topbar">
+      <span class="progress-label">Section 2 of 6 — Family</span>
+      <span class="saved-indicator">Saved ✓</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" style="width:45%"></div></div>
+
+    <div class="form-body">
+      <div class="yn-question">
+        <p class="yn-text">Do you or your spouse have a child from a previous relationship, or from before this marriage?</p>
+        <div class="yn-buttons">
+          <button class="yn-btn selected" onclick="toggleYN(this,'reveal1')">Yes</button>
+          <button class="yn-btn" onclick="toggleYN(this,'reveal1')">No</button>
+        </div>
+      </div>
+
+      <div id="reveal1" class="reveal">
+        <div class="child-card">
+          <div class="child-card-row">
+            <div class="field">
+              <label>Nickname or initials</label>
+              <input type="text" placeholder="e.g. J.">
+            </div>
+            <div class="field" style="max-width:90px;">
+              <label>Birth order</label>
+              <input type="text" placeholder="—">
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:14px;">
+            <label>Is this child biologically...</label>
+            <select class="qual-select" onchange="toggleImpediment(this)">
+              <option value="self">Yours</option>
+              <option value="spouse">Your spouse's</option>
+              <option value="both">Both of yours, from before we married</option>
+            </select>
+          </div>
+
+          <div id="impediment-followup" style="display:none; background:var(--ivory); border-radius:6px; padding:12px; margin-bottom:14px;">
+            <label style="display:block; font-size:12.5px; color:var(--narra-soft); margin-bottom:8px; font-weight:600;">At the time this child was conceived, was either of you already married to someone else?</label>
+            <div class="minor-yn">
+              <button onclick="toggleYN(this)">Yes</button>
+              <button onclick="toggleYN(this)">No</button>
+              <button class="selected" onclick="toggleYN(this)">Not sure</button>
+            </div>
+          </div>
+
+          <div class="minor-row">
+            <span>Currently under 18?</span>
+            <div class="minor-yn">
+              <button onclick="toggleYN(this)">Yes</button>
+              <button class="selected" onclick="toggleYN(this)">No</button>
+            </div>
+          </div>
+        </div>
+        <button class="add-child-btn">+ Add another</button>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn-secondary" onclick="showScreen('children')">Back</button>
+        <button class="btn-primary-flow" onclick="showScreen('morequestions')">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: A FEW MORE THINGS (grouped simple Y/N) -->
+  <div id="morequestions" class="screen form-screen">
+    <div class="form-topbar">
+      <span class="progress-label">Section 2 of 6 — Family</span>
+      <span class="saved-indicator">Saved ✓</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" style="width:58%"></div></div>
+
+    <div class="form-body">
+      <h2 class="form-title">A few more things</h2>
+
+      <div class="simple-q">
+        <p class="simple-q-text">Has any child of yours passed away before you, leaving children of their own?</p>
+        <div class="yn-buttons">
+          <button class="yn-btn" onclick="toggleYN(this)">Yes</button>
+          <button class="yn-btn selected" onclick="toggleYN(this)">No</button>
+        </div>
+      </div>
+
+      <div class="simple-q">
+        <p class="simple-q-text">Is there anyone who believes they are your child, but this hasn't been legally established?</p>
+        <div class="yn-buttons">
+          <button class="yn-btn" onclick="toggleYN(this)">Yes</button>
+          <button class="yn-btn selected" onclick="toggleYN(this)">No</button>
+        </div>
+      </div>
+
+      <div class="simple-q">
+        <p class="simple-q-text">Do you have any living parents?</p>
+        <div class="yn-buttons">
+          <button class="yn-btn selected" onclick="toggleYN(this)">Yes</button>
+          <button class="yn-btn" onclick="toggleYN(this)">No</button>
+        </div>
+      </div>
+
+      <div class="nav-buttons" style="margin-top:22px;">
+        <button class="btn-secondary" onclick="showScreen('sensitive')">Back</button>
+        <button class="btn-primary-flow" onclick="showScreen('results')">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div id="results" class="screen results">
+    <div class="results-header">
+      <p class="label">Estimated Total Exposure</p>
+      <div class="exposure-row">
+        <p class="exposure-amount">₱2,340,000</p>
+        <div class="seal">家</div>
+      </div>
+    </div>
+
+    <div class="category">
+      <div class="cat-icon-row">
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="#5A3A22" stroke-width="1.6"><path d="M3 10L12 3l9 7"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>
+        <div class="cat-header">
+          <p class="cat-title">Marital Property</p>
+          <span class="tag consult">Needs Consultation</span>
+        </div>
+      </div>
+      <p class="cat-stat">Not yet formally settled</p>
+      <p class="cat-caption">This affects how much of your assets you can freely plan.</p>
+      <p class="cat-fix"><b>Fix:</b> a formal liquidation resolves this.</p>
+    </div>
+
+    <div class="category">
+      <div class="cat-icon-row">
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="#5A3A22" stroke-width="1.6"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="8" r="3"/><path d="M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/><path d="M15 11a5 5 0 0 1 5 5v2"/></svg>
+        <div class="cat-header">
+          <p class="cat-title">Legitime &amp; Heirs</p>
+          <span class="tag confirmed">Confirmed</span>
+        </div>
+      </div>
+      <p class="cat-stat">2 children — equal shares by law</p>
+      <div class="bar-row">
+        <div class="bar-label"><span>Child A</span><span>₱4,000,000</span></div>
+        <div class="bar-track">
+          <div class="bar-received" style="width:70%"></div>
+          <div class="bar-remaining" style="width:30%"></div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label"><span>Child B</span><span>₱4,000,000</span></div>
+        <div class="bar-track">
+          <div class="bar-received" style="width:40%"></div>
+          <div class="bar-remaining" style="width:60%"></div>
+        </div>
+      </div>
+      <div class="bar-legend">
+        <span><i class="dot" style="background:var(--narra-soft)"></i>Already received</span>
+        <span><i class="dot" style="background:var(--gold)"></i>Remaining share</span>
+      </div>
+    </div>
+
+    <div class="category">
+      <div class="cat-icon-row">
+        <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="#5A3A22" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        <div class="cat-header">
+          <p class="cat-title">Estate Tax</p>
+          <span class="tag estimated">Estimated — Verify</span>
+        </div>
+      </div>
+      <p class="cat-stat">CPA certification required</p>
+      <p class="cat-caption">Your gross estate exceeds ₱5,000,000.</p>
+      <p class="cat-fix"><b>Fix:</b> insurance can fund this without selling assets.</p>
+    </div>
+
+    <p class="disclaimer">Not legal or tax advice. Estimates only — verify with a professional.</p>
+
+    <div class="cta-footer">
+      <button class="cta-primary">Email me my results</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-tabs button').forEach(b => {
+    if(b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+id+"'")) b.classList.add('active');
+  });
+}
+function toggleYN(btn, revealId){
+  const group = btn.parentElement.querySelectorAll('.yn-btn, .minor-yn button');
+  group.forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  if(revealId){
+    const reveal = document.getElementById(revealId);
+    const isYes = btn.textContent.trim() === 'Yes';
+    reveal.style.display = isYes ? 'block' : 'none';
+  }
+}
+function toggleImpediment(select){
+  const followup = document.getElementById('impediment-followup');
+  followup.style.display = (select.value === 'both') ? 'block' : 'none';
+}
+</script>
+
+</body>
+</html>
