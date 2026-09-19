@@ -27,3 +27,43 @@ export function hasAnyMinorHeir(heirs) {
   ];
   return allChildren.some((child) => child.isMinor === true);
 }
+
+/**
+ * LB-11: a child described as "both of yours, from before we married" is only
+ * reclassified by the legitimationImpediment follow-up — "self" and "spouse"
+ * children never ask it. Returns:
+ * - "legitimated"  — both.yours + no impediment at conception -> joins the legitimate/adopted pool
+ * - "illegitimate" — self, OR both.yours + confirmed impediment -> confirmed illegitimate, 1 unit
+ * - "unclear"      — both.yours + impediment "not_sure"/unset -> deferred to consultation, no unit
+ * - "none"         — "spouse" alone: not the decedent's biological child, no claim on THIS estate (LB-5)
+ */
+export function classifyIllegitimateChild(child) {
+  if (child.biologicalParent === "both") {
+    if (child.legitimationImpediment === "no") return "legitimated";
+    if (child.legitimationImpediment === "yes") return "illegitimate";
+    return "unclear"; // "not_sure" or not yet answered
+  }
+  if (child.biologicalParent === "self") return "illegitimate";
+  return "none";
+}
+
+/**
+ * Build Brief §3.6 (v7): tallies illegitimate children into the three buckets
+ * calculateIntestateUnits needs — legitimated (joins the 2-unit pool), confirmed
+ * illegitimate (1 unit), and unclear (excluded from both, flagged for consultation).
+ */
+export function classifyIllegitimateChildren(illegitimateChildren = []) {
+  let legitimatedCount = 0;
+  let illegitimateSelfCount = 0;
+  const unclearChildIds = [];
+
+  for (const child of illegitimateChildren) {
+    const classification = classifyIllegitimateChild(child);
+    if (classification === "legitimated") legitimatedCount++;
+    else if (classification === "illegitimate") illegitimateSelfCount++;
+    else if (classification === "unclear") unclearChildIds.push(child.id);
+    // "none" (spouse-only child): not a compulsory heir of this decedent, no unit, no flag.
+  }
+
+  return { legitimatedCount, illegitimateSelfCount, unclearChildIds };
+}

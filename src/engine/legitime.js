@@ -1,24 +1,37 @@
 // Build Brief §3.5 (testate floor) and §3.6 (intestate unit method + collation catch-up).
 // LB-5: intestate and testate are two different frameworks and must not be blended.
 import { UNITS } from "./constants.js";
-import { countDecedentsIllegitimateChildren } from "./heirs.js";
+import { countDecedentsIllegitimateChildren, classifyIllegitimateChild, classifyIllegitimateChildren } from "./heirs.js";
 
 // ---------------------------------------------------------------------------
-// §3.6 Step 2 — Intestate Unit Method
+// §3.6 Step 2 — Intestate Unit Method. UPDATED for v7 (LB-11 legitimation).
 // ---------------------------------------------------------------------------
 
 export function calculateIntestateUnits({ heirs, spouseEligible }) {
   const legitimateCount = heirs.legitimateChildren.length;
   const adoptedCount = heirs.adoptedChildren.length; // LB-9 — same weight as legitimate.
-  const illegitimateSelfCount = countDecedentsIllegitimateChildren(heirs.illegitimateChildren);
+  const { legitimatedCount, illegitimateSelfCount, unclearChildIds } = classifyIllegitimateChildren(heirs.illegitimateChildren);
+
+  // LB-11: a legitimated child (both.yours, no impediment at conception) joins
+  // the legitimate/adopted pool at the calculation level — it is not moved out
+  // of the illegitimateChildren array in the data model.
+  const effectiveLegitimateCount = legitimateCount + adoptedCount + legitimatedCount;
 
   const totalUnits =
-    UNITS.legitimateChild * legitimateCount +
-    UNITS.adoptedChild * adoptedCount +
+    UNITS.legitimateChild * effectiveLegitimateCount +
     UNITS.illegitimateChild * illegitimateSelfCount +
     (spouseEligible ? UNITS.spouse : 0);
 
-  return { legitimateCount, adoptedCount, illegitimateSelfCount, spouseEligible, totalUnits };
+  return {
+    legitimateCount,
+    adoptedCount,
+    legitimatedCount,
+    illegitimateSelfCount,
+    unclearChildIds,
+    effectiveLegitimateCount,
+    spouseEligible,
+    totalUnits,
+  };
 }
 
 /**
@@ -39,8 +52,15 @@ export function calculateIntestateLegitime({ collatedBase, heirs, spouseEligible
     entitlements.push({ heirId: child.id, heirType: "adoptedChild", grossEntitlement: UNITS.adoptedChild * valuePerUnit });
   }
   for (const child of heirs.illegitimateChildren) {
-    if (countDecedentsIllegitimateChildren([child]) === 0) continue;
-    entitlements.push({ heirId: child.id, heirType: "illegitimateChild", grossEntitlement: UNITS.illegitimateChild * valuePerUnit });
+    const classification = classifyIllegitimateChild(child);
+    if (classification === "legitimated") {
+      // LB-11: legitimated by the subsequent marriage — same 2-unit weight as a legitimate child.
+      entitlements.push({ heirId: child.id, heirType: "legitimatedChild", grossEntitlement: UNITS.legitimateChild * valuePerUnit });
+    } else if (classification === "illegitimate") {
+      entitlements.push({ heirId: child.id, heirType: "illegitimateChild", grossEntitlement: UNITS.illegitimateChild * valuePerUnit });
+    }
+    // "unclear" (legitimation status not yet confirmed) and "none" (spouse-only,
+    // not this decedent's biological child) get no entitlement row.
   }
   if (spouseEligible) {
     entitlements.push({ heirId: "spouse", heirType: "spouse", grossEntitlement: UNITS.spouse * valuePerUnit });
@@ -56,7 +76,7 @@ export function calculateIntestateLegitime({ collatedBase, heirs, spouseEligible
  */
 export function assertEqualChildEntitlements(entitlements) {
   const childAmounts = entitlements
-    .filter((e) => e.heirType === "legitimateChild" || e.heirType === "adoptedChild")
+    .filter((e) => e.heirType === "legitimateChild" || e.heirType === "adoptedChild" || e.heirType === "legitimatedChild")
     .map((e) => e.grossEntitlement);
   const distinct = new Set(childAmounts.map((v) => Math.round(v * 100)));
   if (distinct.size > 1) {

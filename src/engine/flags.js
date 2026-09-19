@@ -42,3 +42,32 @@ export function detectFamilyHomeCoOwnershipRisk({ assets, illegitimateChildren, 
     .filter((a) => a.category === "real_property" && a.isFamilyHome === true && a.natureOfUse === "primary_residence")
     .map((a) => ({ type: "family_home_co_ownership_risk", assetId: a.id }));
 }
+
+/**
+ * LB-12: both void-union property branches are descriptive-only — Art. 147's
+ * bad-faith forfeiture and Art. 148's proportional-contribution split are both
+ * fact-intensive determinations the tool doesn't attempt to compute.
+ */
+export function detectVoidUnionFlags(maritalRegime) {
+  if (maritalRegime === "void_union_147") return [{ type: "void_union_bad_faith_not_computed" }];
+  if (maritalRegime === "void_union_148") return [{ type: "void_union_art148_needs_review" }];
+  return [];
+}
+
+/**
+ * LB-11: a "both of yours" child whose legitimation status is still "not_sure"
+ * carries no unit either way — deferred to consultation rather than guessed.
+ */
+export function detectUnclearLegitimationFlags(unclearChildIds = []) {
+  return unclearChildIds.map((heirId) => ({ type: "legitimation_status_unclear", heirId }));
+}
+
+/**
+ * §3.7a (Decision #32): no children of any kind, no living spouse, no living
+ * parents — Philippine intestate succession would pass to collateral relatives
+ * (siblings, nephews, nieces, Civil Code Arts. 1003+), which HeirIQ does not
+ * model. Descriptive only; no computation is attempted for this heir class.
+ */
+export function detectNoEligibleHeirClassFlag(heirs) {
+  return heirs.noEligibleHeirClass === true ? [{ type: "no_modeled_heir_class" }] : [];
+}

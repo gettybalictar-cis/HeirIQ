@@ -1,11 +1,18 @@
 // HeirIQ calculation engine — standalone module, no UI dependency.
-// Orchestrates the full pipeline described in HeirIQ-ClaudeCode-Build-Brief-v6.md §3.
+// Orchestrates the full pipeline described in HeirIQ-ClaudeCode-Build-Brief-v7.md §3.
 import { calculateGrossEstate } from "./grossEstate.js";
 import { calculateFamilyHomeDeduction, calculateNetTaxableEstate } from "./deductions.js";
 import { calculateEstateTax, requiresCPACertification } from "./estateTax.js";
 import { isEJSEligible } from "./ejs.js";
 import { calculateIntestateLegitime, applyCollationCatchUp, assertEqualChildEntitlements, calculateTestateLegitimeFloor } from "./legitime.js";
-import { isSpouseDisqualified, netProfitForfeitureFlag, detectFamilyHomeCoOwnershipRisk } from "./flags.js";
+import {
+  isSpouseDisqualified,
+  netProfitForfeitureFlag,
+  detectFamilyHomeCoOwnershipRisk,
+  detectVoidUnionFlags,
+  detectNoEligibleHeirClassFlag,
+  detectUnclearLegitimationFlags,
+} from "./flags.js";
 import { STANDARD_DEDUCTION } from "./constants.js";
 
 /**
@@ -74,6 +81,7 @@ export function calculateEstate(input) {
     flags.push(...catchUpFlags);
 
     legitime = { mode: "intestate", units, valuePerUnit, entitlements: detail, totalNeededFromRemainingEstate };
+    flags.push(...detectUnclearLegitimationFlags(units.unclearChildIds));
   } else {
     // §3.5 — Testate: floor only, per LB-5 (not a full will simulation).
     legitime = { mode: "testate", floor: calculateTestateLegitimeFloor({ collatedBase, heirs, spouseEligible }) };
@@ -92,6 +100,13 @@ export function calculateEstate(input) {
   // LB-4/LB-3 Mechanic A — descriptive only, never a computed amount.
   const forfeitureFlag = netProfitForfeitureFlag(disqualification);
   if (forfeitureFlag) flags.push(forfeitureFlag);
+
+  // LB-12 — void-union property treatment is descriptive only (Art. 147 forfeiture,
+  // Art. 148 proportional-contribution split are both fact-intensive, not computed).
+  flags.push(...detectVoidUnionFlags(maritalRegime));
+
+  // §3.7a (Decision #32) — collateral-relative trip-wire, descriptive only.
+  flags.push(...detectNoEligibleHeirClassFlag(heirs));
 
   return {
     grossEstate,

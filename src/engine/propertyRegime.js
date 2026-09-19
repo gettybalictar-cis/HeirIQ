@@ -7,10 +7,25 @@ import { ACP_EFFECTIVE_DATE, COMMUNITY_REGIMES } from "./constants.js";
  * LB-2: a surviving spouse who remarries without first liquidating the prior
  * marriage's community/conjugal property is automatically forced into complete
  * separation of property for the new marriage, overriding everything else.
+ * LB-12: a VOID marriage never triggered ACP/CPG at all — there was no marriage
+ * for those regimes to attach to. Checked first, unconditionally, and returns
+ * immediately: Art. 147 (no impediment between the parties) or Art. 148 (an
+ * impediment existed, most commonly one party already validly married elsewhere)
+ * govern instead. "not_sure" takes the cautious Art. 148 (no-default) path.
  */
-export function resolveMaritalRegime({ marriageDate, hasPrenup = false, remarriedWithoutLiquidation = false }) {
+export function resolveMaritalRegime({
+  status,
+  marriageDate,
+  hasPrenup = false,
+  prenupRegime = null,
+  voidImpediment = null,
+  remarriedWithoutLiquidation = false,
+}) {
+  if (status === "void") {
+    return voidImpediment === "no" ? "void_union_147" : "void_union_148";
+  }
   if (remarriedWithoutLiquidation) return "forced_separation";
-  if (hasPrenup) return "per_prenup";
+  if (hasPrenup && prenupRegime) return prenupRegime;
   const acpStart = new Date(ACP_EFFECTIVE_DATE);
   return new Date(marriageDate) >= acpStart ? "ACP" : "CPG";
 }
