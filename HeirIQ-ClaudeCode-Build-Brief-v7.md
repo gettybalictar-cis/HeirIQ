@@ -1,6 +1,6 @@
-# HeirIQ — Claude Code Build Brief v6.0
+# HeirIQ — Claude Code Build Brief v7.0
 **Translating the design spec into architecture, data model, calculation logic, and build sequence.**
-*v6 supersedes v5 — two fixes surfaced by the Claude Code build session itself: (1) the testate floor formula (§3.5) never included adopted children after LB-9 was added — fixed here; (2) EJS eligibility needs a per-heir minor-status field that didn't exist in the data model — added as `isMinor` below. Legal Basis Appendix remains at v3.0.*
+*v7 supersedes v6 — adds the void-marriage branch (LB-12: new `maritalHistory` fields, `regime_override` values, and an auto-legitimate children rule) and the legitimation-impediment field on illegitimate children (LB-11). Also adds a `noEligibleHeirClass` trip-wire for the collateral-relative gap. Legal Basis Appendix is now at v4.0.*
 
 ---
 
@@ -12,18 +12,46 @@ See v2 for full table (framework, hosting, backend, access control, email sender
 
 ---
 
-## 2. Data Model — Heirs and Assets Sections Updated
+## 2. Data Model — Marital History, Heirs, and Assets Sections Updated
 
-### 2a. Heirs (updated for v6 — adds `isMinor` per child, needed for EJS eligibility, see §3.5)
+### 2a-pre. Marital History (explicit for v7 — adds the void-marriage branch, LB-12)
+
+```js
+maritalHistory: {
+  marriages: [
+    {
+      status: "married" | "widowed" | "annulled" | "void" | "legally_separated",  // "void" is NEW
+      // ...existing fields: date, prenup, prenupRegime, endedBy, priorMarriageLiquidated (LB-2),
+      // annulmentBadFaith (LB-3), legalSeparationOffendingParty (LB-4) — unchanged, see v2
+
+      // NEW for v7, only asked if status == "void":
+      voidGround: "psychological_incapacity" | "other" | null,   // LB-12 — determines children's legitimacy
+      voidImpediment: "yes" | "no" | "not_sure" | null            // LB-12 — determines Art. 147 vs 148 property treatment
+    }
+  ]
+}
+```
+
+### 2a. Heirs (adds legitimation impediment field for v7, LB-11)
 
 ```js
 heirs: {
   legitimateChildren: [{ id, label, birthOrder, isMinor: bool }],    // max 10
   adoptedChildren: [{ id, label, birthOrder, isMinor: bool }],       // max 10 — LB-9, joins legitimateChildren's unit pool, see §3.6
-  illegitimateChildren: [{ id, label, birthOrder, isMinor: bool, biologicalParent: "self" | "spouse" | "both" }],  // LB-5
+  illegitimateChildren: [{
+    id, label, birthOrder, isMinor: bool,
+    biologicalParent: "self" | "spouse" | "both",  // LB-5
+    // NEW for v7 — only asked if biologicalParent == "both":
+    legitimationImpediment: "yes" | "no" | "not_sure" | null   // LB-11 — "no" reclassifies this child into the
+                                                                  // legitimate/adopted unit pool at calculation time,
+                                                                  // not by moving it out of this array
+  }],
   livingParents: bool,
   hasPredeceasedChildWithDescendants: bool,
-  hasDisputedFiliationClaim: bool
+  hasDisputedFiliationClaim: bool,
+  // NEW for v7 — Decision #32, Design Spec §B trip-wire:
+  noEligibleHeirClass: bool   // true if no children of any kind, no living spouse, no living parents —
+                                // triggers a consultation-only flag, no computation attempted (collateral relatives)
 }
 ```
 
@@ -78,9 +106,48 @@ const VALUE_BANDS = {
 
 ---
 
-## 3. Calculation Engine — One New Rule Added
+## 3. Calculation Engine — Updated for Void Marriages (LB-12), Plus Prior Fixes
 
-### 3.2a Double-Counting Prevention (new)
+### 3.1 Property Regime Resolution — UPDATED for v7 (adds void-union branch)
+
+```
+if marriage.status == "void":
+    if voidImpediment == "no":
+        regime_override = "void_union_147"   // LB-12, Art. 147
+    else:  // "yes" or "not_sure" — treat "not sure" as requiring the cautious path
+        regime_override = "void_union_148"   // LB-12, Art. 148
+    // NEVER apply ACP/CPG resolution logic below for a void marriage — it never applied.
+else if prenup exists and prenupRegime set:
+    regime = prenupRegime
+else if marriageDate >= 1988-08-03:
+    regime = "ACP"
+else:
+    regime = "CPG"
+
+if priorMarriageLiquidated == false or "not_sure" (on a remarriage-after-death):
+    regime_override = "forced_separation"   // LB-2, Art. 103/130
+```
+
+### 3.2 Asset Ownership Split — UPDATED for v7 (adds void-union branches)
+
+```
+for each asset:
+    if regime_override == "void_union_147":
+        decedentShare = 50%   // Art. 147 presumption of equal co-ownership
+        flag("void_union_bad_faith_not_computed")   // descriptive only — LB-12
+    else if regime_override == "void_union_148":
+        decedentShare = user-provided estimate (no default applied)
+        confidence = "estimated"
+        flag("void_union_art148_needs_review")   // descriptive only — LB-12, proportional-contribution not computed
+    else if regime == "separation" OR regime_override == "forced_separation":
+        decedentShare = 100%
+    else if acquisitionTiming == "before_marriage" OR "during_marriage_gift_inheritance":
+        decedentShare = 100%
+    else:
+        decedentShare = 50%
+```
+
+### 3.2a Double-Counting Prevention (unchanged from v6)
 
 Runs immediately after asset entry, before §3.2 (Asset Ownership Split):
 
@@ -136,27 +203,40 @@ if (illegitimate child exists AND biologicalParent includes "self")
 // explicit and reliable rather than relying on isFamilyHome alone.
 ```
 
-### 3.6, Step 2 — Intestate Unit Method — UPDATED for v4 (adds adopted children, LB-9)
+### 3.6, Step 2 — Intestate Unit Method — UPDATED for v7 (adds legitimation reclassification, LB-11/LB-12)
 
 ```
 netHereditaryEstate = decedent's exclusive assets + decedent's community share
 collatedBase = netHereditaryEstate + sum(priorGifts.valueAtTimeOfGift where recipient is a compulsory heir)
 
-units.legitimateChild = 2   // each
-units.adoptedChild = 2      // each — NEW, LB-9: joins the legitimate-child pool, no distinction
-units.illegitimateChild = 1 // each, only if biologicalParent includes "self"
+// NEW for v7 — reclassify before counting units, do not move records between arrays:
+effectiveLegitimateCount = count(legitimateChildren) + count(adoptedChildren)
+                         + count(illegitimateChildren where biologicalParent == "both"
+                                 AND legitimationImpediment == "no")                    // LB-11
+// NOTE: Art. 54 auto-legitimate children (LB-12, void marriage on psychological-incapacity
+// grounds, conceived/born before the nullity judgment) are captured directly as
+// legitimateChildren via Section B's UI guidance copy — the tool does not track judgment
+// dates or child birthdates, so this reclassification is handled by discovery-flow routing,
+// not computed here. Do not add a date-comparison branch for this without adding the
+// underlying date fields first.
+effectiveIllegitimateCount = count(illegitimateChildren where biologicalParent includes "self" or "spouse")
+                            + count(illegitimateChildren where biologicalParent == "both"
+                                    AND legitimationImpediment == "yes")                // LB-11
+// legitimationImpediment == "not_sure" → defer this specific child to consultation,
+// exclude from both counts, flag("legitimation_status_unclear")
+
+units.legitimateChild = 2   // each — now includes legitimated and Art. 54 auto-legitimate children
+units.illegitimateChild = 1 // each, confirmed illegitimate only
 units.spouse = 2            // only if spouse survives AND is not disqualified (LB-3, LB-4)
 
-totalUnits = (2 * count(legitimateChildren)) + (2 * count(adoptedChildren))
-           + (1 * count(illegitimateChildren where biologicalParent includes "self"))
-           + (spouse eligible ? 2 : 0)
+totalUnits = (2 * effectiveLegitimateCount) + (1 * effectiveIllegitimateCount) + (spouse eligible ? 2 : 0)
 valuePerUnit = collatedBase / totalUnits
 
-each legitimate OR adopted child's gross entitlement = 2 * valuePerUnit
-each illegitimate child's gross entitlement = 1 * valuePerUnit
+each effectively-legitimate child's gross entitlement = 2 * valuePerUnit
+each effectively-illegitimate child's gross entitlement = 1 * valuePerUnit
 spouse's gross entitlement (if eligible) = 2 * valuePerUnit
 
-// sanity check: all legitimate AND adopted children's gross entitlements MUST be equal
+// sanity check: all effectively-legitimate children's gross entitlements MUST be equal
 // to one another (same 2-unit weighting) — if not, this is a bug, flag for review.
 ```
 
@@ -207,7 +287,16 @@ if mode == "testate":
 ```
 Validated against Test Scenario 5 (`HeirIQ-Test-Scenarios-v2.md`) — a legitimate/adopted/illegitimate/spouse mix, confirming the adopted child's floor is identical to a legitimate child's.
 
-All other calculation engine sections (§3.1, 3.3, 3.7, 3.9) are unchanged from prior versions — see v2 for full detail on sections not reproduced here.
+### 3.7a Collateral-Relative Trip-Wire (new, Decision #32)
+
+```
+if noEligibleHeirClass == true:
+    emit flag("no_modeled_heir_class") — descriptive only, no computation attempted
+    // Philippine intestate succession would pass to collateral relatives (siblings,
+    // nephews, nieces) per Civil Code Arts. 1003+, which HeirIQ does not model.
+```
+
+All other calculation engine sections (§3.3, 3.7, 3.9) are unchanged from prior versions — see v2 for full detail on sections not reproduced here.
 
 ---
 
@@ -229,7 +318,12 @@ All other calculation engine sections (§3.1, 3.3, 3.7, 3.9) are unchanged from 
 
 ---
 
-## 6. Explicit Non-Goals for v1 — unchanged from v2
+## 6. Explicit Non-Goals for v1 — unchanged from v2, plus:
+
+- Do not compute the exact Art. 148 proportional-contribution property split — user-estimated share, flagged for consultation, per LB-12
+- Do not compute Art. 147 bad-faith forfeiture amounts — descriptive flag only, per LB-12
+- Do not attempt collateral-relative (sibling/nephew/niece) succession computation — trip-wire only, per Decision #32
+- Do not track judgment dates or child birthdates for the Art. 54 auto-legitimate determination — handled via discovery-flow routing/copy, not date computation
 
 See v2 for full list. No changes this revision.
 

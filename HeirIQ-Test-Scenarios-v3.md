@@ -1,5 +1,5 @@
-# HeirIQ — Test Scenarios v2.0
-**Five hand-worked scenarios to validate the calculation engine.** v2 adds Scenario 5 (testate mode), which exposed a real gap — the testate floor formula hadn't been updated to include adopted children (LB-9) after that rule was added. Fixed in Build Brief v6, §3.5.
+# HeirIQ — Test Scenarios v3.0
+**Six hand-worked scenarios to validate the calculation engine.** v2 added Scenario 5 (testate mode), which exposed the adopted-children testate floor bug. v3 adds Scenario 6 (legitimation + void marriage), validating LB-11 and LB-12 together.
 
 ---
 
@@ -154,6 +154,40 @@
 | Free portion (testator's discretion — tool does not model actual will content) | ₱6,000,000 |
 | Reconciliation check | 4M×2 (legit) + 4M (adopted) + 4M (spouse) + 2M (illegitimate) + 6M (free) = ₱24,000,000 ✓ |
 | **Tool output note** | *"These are the minimum amounts your will must give each heir. This tool cannot verify your actual will's distribution — have Getty review your will's terms against this floor."* |
+
+---
+
+## Scenario 6 — Legitimation Impediment (LB-11) and Void Marriage Property (LB-12)
+
+**Purpose:** validates that a "both of yours, from before we married" child's legitimation status genuinely changes their unit weighting, and that a void marriage's property never runs through ACP/CPG default logic.
+
+**Inputs:**
+- One marriage on record: `status: "void"`, `voidGround: "other"` (a bigamous void union — decedent was already validly married to someone else at the time), `voidImpediment: "yes"` → `regime_override = "void_union_148"`
+- One child from this void union: `biologicalParent: "both"`, `legitimationImpediment: "yes"` (consistent with the same underlying impediment — decedent was already married elsewhere)
+- Decedent later validly remarried; that spouse survives and is eligible to inherit
+- Assets: a bank account, ₱2,000,000, acquired during the void union (subject to Art. 148); a separate exclusive asset, ₱8,000,000, unrelated to the void union
+- No liabilities, no other children, no will
+
+**Expected output:**
+| Step | Value |
+|---|---|
+| Void-union asset treatment | `regime_override = "void_union_148"` → **no default 50% applied**; user provides an estimate (e.g., "I believe 50% is mine") = ₱1,000,000, tagged `estimated`, flagged `void_union_art148_needs_review` |
+| Confirms ACP/CPG never ran | The void marriage never entered the ACP/CPG branch in §3.1 at all — ordering check |
+| Net hereditary estate | ₱1,000,000 (void-union share) + ₱8,000,000 (exclusive) = **₱9,000,000** |
+| Legitimation check | `legitimationImpediment: "yes"` → child is **confirmed illegitimate**, 1 unit (not reclassified) |
+| Total units | 1 (illegitimate child) + 2 (spouse) = 3 |
+| Value per unit | ₱9,000,000 ÷ 3 = ₱3,000,000 |
+| **Child's entitlement** | **₱3,000,000** (1 unit) |
+| **Spouse's entitlement** | **₱6,000,000** (2 units) |
+
+**Contrast check (same facts, `legitimationImpediment: "no"` instead)** — confirms the branch produces a genuinely different, correctly-computed result, not just a different label:
+| Step | Value |
+|---|---|
+| Legitimation check | Child is **legitimated** → joins the legitimate pool, 2 units |
+| Total units | 2 (legitimated child) + 2 (spouse) = 4 |
+| Value per unit | ₱9,000,000 ÷ 4 = ₱2,250,000 |
+| **Child's entitlement** | **₱4,500,000** — a materially different number than the illegitimate case (₱3,000,000), confirming the branch has real computational consequences, not just a cosmetic label change |
+| **Spouse's entitlement** | **₱4,500,000** |
 
 ---
 

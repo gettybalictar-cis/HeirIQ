@@ -1,9 +1,9 @@
-# HeirIQ — Legal Basis Appendix v3.0
+# HeirIQ — Legal Basis Appendix v4.0
 **Purpose:** the full citation chain and interpretation behind every branch rule in HeirIQ's calculation engine. The Design Spec and Build Brief reference these entries by their short code (e.g., **LB-4**) rather than re-explaining the law inline. If a rule in the app ever needs to be questioned, defended, or updated, this is the document to check first.
 
 *Grounded in the Civil Code of the Philippines, the Family Code (Executive Order No. 209, as amended), and, where noted, actual Supreme Court decisions — not secondary summaries alone. Verified against primary/official-source text as of this document's writing (Aug 2026).*
 
-*v2 added LB-9 (adopted children's succession rights). v3 adds LB-10 (worldwide estate inclusion for citizens/resident aliens, the basis for capturing foreign-currency assets). Donor's-tax citizenship/situs complexity was explicitly discussed and excluded from scope this round — the estate owner is assumed to be a PH citizen or resident alien throughout; a non-resident-alien estate owner remains out of scope per existing Known Limitations.*
+*v2 added LB-9 (adopted children). v3 added LB-10 (worldwide estate inclusion). v4 adds LB-11 (legitimation of children born before marriage) and LB-12 (void marriages — property under Art. 147/148, children's legitimacy exception under Art. 54) — both surfaced during a design review of the illegitimate-children discovery flow. Donor's-tax citizenship/situs complexity remains excluded from scope.*
 
 ---
 
@@ -133,6 +133,32 @@
 
 ---
 
+## LB-11 — Legitimation of Children Born Before Marriage
+
+**Rule:** A child conceived and born to a couple *before* they marry becomes **legitimated** — legally treated as fully legitimate, retroactive to birth — the moment the parents subsequently marry, **provided neither parent was disqualified by any impediment to marry the other at the time of conception** (e.g., neither was already validly married to someone else). If such an impediment existed at conception, legitimation is permanently barred — the child remains illegitimate even after that impediment is later removed and the parents validly marry each other.
+
+**Basis:** Family Code Arts. 177–178, as amended by RA 9858; illustrated in *Abadilla v. Tabiliran, Jr.* (A.M. No. MTJ-92-716-A, 1994), where children conceived while the father was still validly married to someone else could not be legitimated by his later marriage to their mother.
+
+**Interpretation:** A child described as "both of yours, from before we married" is not automatically illegitimate — it depends entirely on whether an impediment existed at conception. This requires one additional yes/no/not-sure question beyond simply identifying the child's biological parents.
+
+**Used in:** Design Spec Section B (illegitimate-children flow — the "both of yours" branch and its impediment follow-up); Build Brief §3.6 (a legitimated child joins the legitimate/adopted unit pool at 2 units; a confirmed-impediment child joins the illegitimate pool at 1 unit; "not sure" is deferred to consultation).
+
+---
+
+## LB-12 — Void Marriages: Property (Art. 147/148) and the Children's Legitimacy Exception (Art. 54)
+
+**Rule, property:** A marriage that is **void** (never legally existed, as opposed to *voidable*/annulled, which was valid until a court ended it) never triggered ACP or CPG — there was no marriage for those regimes to attach to. Instead: **Article 147** governs if neither party had any impediment to marry the other (property from the union presumed co-owned in equal shares, regardless of who actually earned it; a bad-faith party's share can be forfeited to their common children). **Article 148** governs instead if an impediment existed between the parties themselves (most commonly, one was already validly married to someone else) — only property with *proven actual contribution* is co-owned, split by actual contribution, with no presumption of equality.
+
+**Rule, children:** Children conceived or born **before the judgment of nullity**, where the marriage was voided specifically on **psychological incapacity grounds (Art. 36)**, are legitimate — a special statutory exception. Children of marriages void for **other reasons** (bigamous, incestuous, missing a license, etc.) follow the general illegitimacy rule, subject to later legitimation under LB-11 if applicable.
+
+**Basis:** Family Code Arts. 36, 54, 147, 148; confirmed in *Diño v. Diño* (G.R. No. 178044, 2011) and *Valdes v. RTC* (G.R. No. 122749, 1996) for the Art. 147/148 property distinction; Art. 54 for the children's legitimacy exception.
+
+**Interpretation:** This is a materially different scenario from annulment (LB-3) and must not be folded into it — annulment ends a marriage that was genuinely valid until then; a void marriage never had ACP/CPG apply at all. Given the fact-intensive nature of Art. 148's "proven actual contribution" test and Art. 147's bad-faith forfeiture, **the precise property split should not be computed** — only the presumption-of-equality default under Art. 147 is safe to apply automatically; Art. 148 situations should default to a user-estimated share flagged for consultation.
+
+**Used in:** Design Spec Section A (new "void" marital status branch, with ground and impediment follow-up questions); Build Brief §3.1–3.2 (`regime_override = "void_union_147"` or `"void_union_148"`), §3.6 (auto-legitimate classification for Art. 36 children conceived/born before the nullity judgment).
+
+---
+
 ## Quick Reference Table
 
 | Code | Topic | Computable in v1? |
@@ -147,3 +173,5 @@
 | LB-8 | No pre-death waivers | Not computed — used to exclude an invalid "fix" from ever being suggested |
 | LB-9 | Adopted children's succession rights | Yes — fully computable, joins the legitimate-child unit pool |
 | LB-10 | Worldwide estate inclusion for citizens/resident aliens | Yes — no situs filtering needed; foreign currency converted and counted in full |
+| LB-11 | Legitimation of children born before marriage | Yes — one impediment question determines legitimate vs. illegitimate pool |
+| LB-12 | Void marriages — property (Art. 147/148) and children (Art. 54) | Children: yes, computable. Property: Art. 147 default computable; Art. 148 — user-estimated, flagged for consultation |
