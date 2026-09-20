@@ -54,7 +54,7 @@
 
   /* ===== SHARED ===== */
   .center-pad{ padding:56px 28px; text-align:center; }
-  .mark{ width:64px; height:64px; margin:0 auto 18px auto; }
+  .mark{ width:64px; height:64px; margin:0 auto 18px auto; object-fit:contain; display:block; }
   .brand-name{
     font-family:'Fraunces', serif;
     font-optical-sizing:auto;
@@ -519,14 +519,7 @@ function render() {
 }
 
 function markSvg() {
-  return '<svg class="mark" viewBox="0 0 200 200"><defs>' +
-    '<linearGradient id="ng" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7A5638"/><stop offset="100%" stop-color="#4A2E1A"/></linearGradient>' +
-    '<linearGradient id="ngs" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#A6836A"/><stop offset="100%" stop-color="#6B4A30"/></linearGradient>' +
-    '<linearGradient id="gg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E0BA6A"/><stop offset="100%" stop-color="#9C7223"/></linearGradient></defs>' +
-    '<path d="M112,20 C120,15 140,18 156,32 C168,45 172,58 165,68 C158,76 148,70 145,58 C138,38 120,25 100,22 C90,20 82,18 84,14 Z" fill="url(#ng)"/>' +
-    '<path d="M60,72 C90,58 130,60 158,84 C172,98 176,112 168,122 C160,130 148,122 144,106 C132,80 100,66 68,80 C58,84 54,80 60,72 Z" fill="url(#gg)"/>' +
-    '<path d="M100,96 L52,168 L64,174 L108,104 Z" fill="url(#ng)"/><path d="M105,96 L92,178 L104,180 L114,100 Z" fill="url(#ngs)"/>' +
-    '<path d="M110,96 L138,178 L126,180 L100,100 Z" fill="url(#ngs)"/><path d="M115,96 L168,164 L158,172 L104,104 Z" fill="url(#ng)"/></svg>';
+  return '<img class="mark" src="favicon.svg" alt="HeirIQ">';
 }
 
 function topbar(title) {
