@@ -967,7 +967,7 @@ function findAsset(id) { return state.assets.find((a) => a.id === id); }
 function findChildList(kind) { return state.heirs[kind]; }
 
 function bindHandlers() {
-  app.querySelectorAll("select, input[type=date], input[type=email]").forEach((el) => {
+  app.querySelectorAll("select, input[type=date], input[type=email], input[type=checkbox]").forEach((el) => {
     el.addEventListener("change", handleFieldChange);
   });
   app.querySelectorAll('input[type=number], input[type=text]:not([id])').forEach((el) => {
