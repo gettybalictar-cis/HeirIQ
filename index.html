@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HeirIQ — Estate Intelligence &amp; Legacy Planning</title>
+
+<!-- Favicon package (RealFaviconGenerator standard output, repo root) -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..700,0..100&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+  :root{
+    --narra-deep:#5A3A22;
+    --narra-soft:#8A6A52;
+    --gold:#B8892E;
+    --ivory:#F6F1E7;
+    --hairline:#E3D7C4;
+    --confirmed:#2E7D6B;
+    --estimated:#7A8B99;
+    --consult:#B5651D;
+    --white:#FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background:#DDD6C6;
+    font-family:'Source Sans 3', sans-serif;
+    color:var(--narra-deep);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 12px;
+  }
+  .device-frame{
+    width:100%;
+    max-width:480px;
+    margin:0 auto;
+    background:var(--ivory);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 20px 50px rgba(90,58,34,0.18);
+    border:1px solid var(--hairline);
+  }
+
+  /* ===== SHARED ===== */
+  .center-pad{ padding:56px 28px; text-align:center; }
+  .mark{ width:64px; height:64px; margin:0 auto 18px auto; }
+  .brand-name{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:600;
+    font-size:30px;
+    letter-spacing:0.01em;
+    color:var(--narra-deep);
+    margin:0 0 28px 0;
+  }
+  .value-prop{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:21px;
+    line-height:1.4;
+    color:var(--narra-deep);
+    margin:0 0 32px 0;
+  }
+  .cta-primary{
+    display:inline-block;
+    background:var(--gold);
+    color:var(--ivory);
+    font-family:'Source Sans 3', sans-serif;
+    font-weight:600;
+    font-size:16px;
+    letter-spacing:0.02em;
+    border:none;
+    border-radius:6px;
+    padding:16px 40px;
+    cursor:pointer;
+    line-height:1.3;
+  }
+  .cta-primary:disabled{ opacity:0.5; cursor:not-allowed; }
+  .cta-primary .sub{ display:block; font-size:12px; font-weight:400; opacity:0.85; margin-top:2px; }
+  .attribution{ margin-top:28px; font-size:13px; color:var(--narra-soft); }
+  .attribution .name{ font-weight:600; }
+  .error-text{ color:var(--consult); font-size:13.5px; margin-top:14px; min-height:1em; }
+
+  .form-screen{ padding:0; }
+  .form-topbar{ display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-bottom:1px solid var(--hairline); }
+  .progress-label{ font-size:12.5px; color:var(--narra-soft); }
+  .saved-indicator{ font-size:12px; color:var(--confirmed); font-weight:600; }
+  .progress-track{ height:4px; background:var(--hairline); }
+  .progress-fill{ height:100%; background:var(--gold); transition:width .2s; }
+
+  .form-body{ padding:26px 24px 32px 24px; }
+  .form-title{ font-family:'Fraunces', serif; font-weight:600; font-size:22px; color:var(--narra-deep); margin:0 0 8px 0; }
+  .form-helper{ font-size:14.5px; line-height:1.5; color:var(--narra-soft); margin:0 0 22px 0; }
+  .section-divider{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--narra-soft); margin:22px 0 10px 0; font-weight:600; }
+
+  .child-card, .asset-card{
+    background:var(--white); border:1px solid var(--hairline); border-radius:8px;
+    padding:16px; margin-bottom:12px;
+  }
+  .child-card-row, .asset-card-row{ display:flex; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .field{ flex:1; min-width:110px; }
+  .field label{ display:block; font-size:12.5px; color:var(--narra-soft); margin-bottom:5px; font-weight:600; }
+  .field input[type=text], .field input[type=number], .field input[type=date], .field input[type=email], .field select{
+    width:100%; padding:10px 12px; border:1px solid var(--hairline);
+    border-radius:6px; font-family:'Source Sans 3',sans-serif; font-size:15px;
+    color:var(--narra-deep); background:var(--ivory);
+  }
+  .field-note{ font-size:12px; color:var(--narra-soft); margin-top:5px; }
+  .minor-row{ display:flex; align-items:center; justify-content:space-between; padding-top:4px; gap:8px; flex-wrap:wrap; }
+  .minor-row span{ font-size:14px; color:var(--narra-deep); }
+  .minor-yn{ display:flex; gap:8px; flex-wrap:wrap; }
+  .minor-yn button{
+    padding:8px 16px; border-radius:6px; border:1.5px solid var(--hairline);
+    background:var(--ivory); color:var(--narra-deep); font-family:'Source Sans 3',sans-serif;
+    font-weight:600; font-size:13.5px; cursor:pointer;
+  }
+  .minor-yn button.selected{ background:var(--narra-deep); color:var(--ivory); border-color:var(--narra-deep); }
+  .remove-link{ font-size:12.5px; color:var(--consult); cursor:pointer; text-align:right; margin-top:6px; }
+
+  .add-btn{
+    width:100%; padding:12px; border:1.5px dashed var(--gold); border-radius:8px;
+    background:none; color:var(--gold); font-family:'Source Sans 3',sans-serif;
+    font-weight:600; font-size:14.5px; cursor:pointer; margin-bottom:22px;
+  }
+
+  .nav-buttons{ display:flex; gap:12px; margin-top:8px; }
+  .btn-secondary{
+    flex:1; padding:14px; border:1px solid var(--hairline); border-radius:6px;
+    background:none; color:var(--narra-soft); font-family:'Source Sans 3',sans-serif;
+    font-weight:600; font-size:15px; cursor:pointer;
+  }
+  .btn-primary-flow{
+    flex:2; padding:14px; border:none; border-radius:6px;
+    background:var(--gold); color:var(--ivory); font-family:'Source Sans 3',sans-serif;
+    font-weight:600; font-size:15px; cursor:pointer;
+  }
+  .btn-primary-flow:disabled{ background:var(--hairline); color:var(--narra-soft); cursor:not-allowed; }
+
+  .yn-question{ text-align:center; padding:10px 8px 8px 8px; }
+  .yn-text{ font-family:'Fraunces', serif; font-weight:500; font-size:19px; color:var(--narra-deep); line-height:1.4; margin:0 0 22px 0; }
+  .yn-buttons{ display:flex; gap:14px; justify-content:center; margin-bottom:8px; flex-wrap:wrap; }
+  .yn-btn{ width:110px; padding:16px 0; border-radius:8px; border:1.5px solid var(--hairline); background:var(--white); color:var(--narra-deep); font-family:'Source Sans 3',sans-serif; font-weight:700; font-size:15px; cursor:pointer; }
+  .yn-btn.selected{ background:var(--narra-deep); color:var(--ivory); border-color:var(--narra-deep); }
+
+  .chip-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
+  .chip{ padding:9px 16px; border-radius:20px; border:1.5px solid var(--hairline); background:var(--white); color:var(--narra-deep); font-size:13.5px; font-weight:600; cursor:pointer; }
+  .chip.selected{ background:var(--gold); color:var(--ivory); border-color:var(--gold); }
+
+  .reveal{ margin-top:20px; padding-top:18px; border-top:1px solid var(--hairline); }
+  .callout{ background:var(--ivory); border:1px solid var(--hairline); border-radius:8px; padding:14px 16px; font-size:13.5px; line-height:1.5; color:var(--narra-soft); margin-bottom:18px; }
+  .callout b{ color:var(--narra-deep); }
+
+  .simple-q{ padding:18px 0; border-bottom:1px solid var(--hairline); }
+  .simple-q:last-child{ border-bottom:none; }
+  .simple-q-text{ font-size:15.5px; color:var(--narra-deep); margin:0 0 12px 0; line-height:1.4; }
+  .simple-q .yn-buttons{ justify-content:flex-start; }
+  .simple-q .yn-btn{ width:90px; padding:12px 0; font-size:14px; }
+
+  .band-row{ display:flex; gap:10px; margin-bottom:14px; }
+  .fx-preview{ background:var(--ivory); border:1px solid var(--hairline); border-radius:6px; padding:10px 12px; font-size:13px; color:var(--narra-soft); margin-top:8px; }
+  .fx-preview b{ color:var(--narra-deep); }
+
+  .consent-body{ padding:28px 24px; }
+  .consent-title{ font-family:'Fraunces', serif; font-weight:600; font-size:21px; color:var(--narra-deep); margin:0 0 14px 0; }
+  .consent-copy{ font-size:14px; line-height:1.65; color:#3A2B1E; margin:0 0 14px 0; }
+  .consent-copy strong{ color:var(--narra-deep); }
+  .consent-check{ display:flex; align-items:flex-start; gap:10px; margin:20px 0; font-size:13.5px; color:var(--narra-deep); line-height:1.4; }
+  .consent-check input{ margin-top:3px; }
+
+  /* ===== RESULTS ===== */
+  .results{ padding:0; }
+  .results-header{ background:var(--narra-deep); color:var(--ivory); padding:28px 26px 24px 26px; }
+  .results-header .label{ font-size:12px; letter-spacing:0.14em; text-transform:uppercase; opacity:0.75; margin:0 0 8px 0; }
+  .exposure-row{ display:flex; align-items:center; justify-content:space-between; }
+  .exposure-amount{ font-family:'Fraunces', serif; font-weight:600; font-size:34px; margin:0; }
+  .seal{ width:48px; height:48px; border:1.5px solid var(--gold); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Fraunces', serif; color:var(--gold); font-size:19px; flex-shrink:0; }
+
+  .category{ padding:22px 26px; border-bottom:1px solid var(--hairline); }
+  .category:last-child{ border-bottom:none; }
+  .cat-header{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .cat-title{ font-family:'Fraunces', serif; font-weight:600; font-size:18px; color:var(--narra-deep); margin:0; }
+  .tag{ font-size:10.5px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; padding:4px 10px; border-radius:20px; color:var(--white); white-space:nowrap; }
+  .tag.confirmed{ background:var(--confirmed); }
+  .tag.estimated{ background:var(--estimated); }
+  .tag.consult{ background:var(--consult); }
+  .cat-stat{ font-family:'Fraunces', serif; font-weight:600; font-size:21px; color:var(--narra-deep); margin:8px 0 4px 0; }
+  .cat-caption{ font-size:14.5px; line-height:1.5; color:#3A2B1E; margin:0 0 10px 0; }
+  .cat-fix{ font-size:14px; line-height:1.5; color:var(--narra-soft); border-left:2px solid var(--gold); padding-left:10px; margin:0; }
+  .cat-fix b{ color:var(--narra-deep); }
+
+  .bar-row{ margin-top:14px; }
+  .bar-label{ display:flex; justify-content:space-between; font-size:13.5px; color:var(--narra-soft); margin-bottom:5px; font-weight:600; }
+  .bar-track{ height:16px; border-radius:3px; overflow:hidden; display:flex; background:var(--hairline); }
+  .bar-received{ background:var(--narra-soft); }
+  .bar-remaining{ background:var(--gold); }
+  .bar-legend{ display:flex; gap:16px; margin-top:8px; font-size:12px; color:var(--narra-soft); flex-wrap:wrap; }
+  .bar-legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .dot{ width:9px; height:9px; border-radius:2px; display:inline-block; }
+
+  .disclaimer{ padding:16px 26px 24px 26px; font-size:11.5px; line-height:1.5; color:var(--narra-soft); font-style:italic; }
+  .cta-footer{ padding:0 26px 30px 26px; text-align:center; }
+  .cta-footer .field{ margin-bottom:14px; text-align:left; }
+
+  [hidden]{ display:none !important; }
+</style>
+</head>
+<body>
+
+<div class="device-frame">
+  <div id="app"></div>
+</div>
+
+<script>
+// =====================================================================================
+// HeirIQ calculation engine — inlined per the single-file index.html architecture
+// decision (Design Spec v8 §1). This is a faithful copy of the tested modules under
+// src/engine/ (validated against all six HeirIQ-Test-Scenarios scenarios) — keep the
+// two in sync if either changes. See src/engine/*.js for the module-by-module version
+// with full per-file legal-citation commentary.
+// =====================================================================================
+const Engine = (function () {
+  const STANDARD_DEDUCTION = 5000000;
+  const FAMILY_HOME_DEDUCTION_CAP = 10000000;
+  const ESTATE_TAX_RATE = 0.06;
+  const CPA_CERTIFICATION_THRESHOLD = 5000000;
+  const UNITS = { legitimateChild: 2, adoptedChild: 2, illegitimateChild: 1, spouse: 2 };
+  const ACP_EFFECTIVE_DATE = "1988-08-03";
+  const COMMUNITY_REGIMES = new Set(["ACP", "CPG"]);
+
+  function resolveMaritalRegime({ status, marriageDate, hasPrenup, prenupRegime, voidImpediment, remarriedWithoutLiquidation }) {
+    if (status === "void") return voidImpediment === "no" ? "void_union_147" : "void_union_148";
+    if (remarriedWithoutLiquidation) return "forced_separation";
+    if (hasPrenup && prenupRegime) return prenupRegime;
+    const acpStart = new Date(ACP_EFFECTIVE_DATE);
+    return new Date(marriageDate) >= acpStart ? "ACP" : "CPG";
+  }
+  function communityShareFraction(maritalRegime) {
+    return COMMUNITY_REGIMES.has(maritalRegime) ? 0.5 : 1.0;
+  }
+
+  function isDoubleCountedRealProperty(asset) {
+    return asset.category === "real_property" && asset.ownershipStructure === "via_business_entity";
+  }
+  function decedentShareOfAsset(asset, maritalRegime) {
+    if (isDoubleCountedRealProperty(asset)) return 0;
+    const isExclusiveByTiming = asset.acquisitionTiming !== "during_marriage_effort_income";
+    if (isExclusiveByTiming) return asset.value.value;
+    if (maritalRegime === "void_union_147") return asset.value.value * 0.5;
+    if (maritalRegime === "void_union_148") {
+      const fraction = asset.voidUnionEstimatedShareFraction;
+      return typeof fraction === "number" ? asset.value.value * fraction : 0;
+    }
+    return asset.value.value * communityShareFraction(maritalRegime);
+  }
+  function calculateGrossEstate(assets, maritalRegime) {
+    return assets.reduce((sum, a) => sum + decedentShareOfAsset(a, maritalRegime), 0);
+  }
+  function calculateFamilyHomeDeduction(assets, maritalRegime) {
+    const share = assets
+      .filter((a) => a.category === "real_property" && a.isFamilyHome === true && a.natureOfUse === "primary_residence")
+      .reduce((sum, a) => sum + decedentShareOfAsset(a, maritalRegime), 0);
+    return Math.min(share, FAMILY_HOME_DEDUCTION_CAP);
+  }
+  function calculateNetTaxableEstate(grossEstate, familyHomeDeduction, liabilitiesTotal) {
+    return Math.max(0, grossEstate - STANDARD_DEDUCTION - familyHomeDeduction - (liabilitiesTotal || 0));
+  }
+  function calculateEstateTax(netTaxableEstate) { return netTaxableEstate * ESTATE_TAX_RATE; }
+  function requiresCPACertification(grossEstate) { return grossEstate > CPA_CERTIFICATION_THRESHOLD; }
+
+  function hasAnyMinorHeir(heirs) {
+    const all = [...heirs.legitimateChildren, ...heirs.adoptedChildren, ...heirs.illegitimateChildren];
+    return all.some((c) => c.isMinor === true);
+  }
+  function isEJSEligible({ hasWill, liabilities, heirs }) {
+    return !hasWill && liabilities.length === 0 && !hasAnyMinorHeir(heirs);
+  }
+
+  function isDecedentsBiologicalChild(c) { return c.biologicalParent === "self" || c.biologicalParent === "both"; }
+  function countDecedentsIllegitimateChildren(list) { return list.filter(isDecedentsBiologicalChild).length; }
+  function classifyIllegitimateChild(child) {
+    if (child.biologicalParent === "both") {
+      if (child.legitimationImpediment === "no") return "legitimated";
+      if (child.legitimationImpediment === "yes") return "illegitimate";
+      return "unclear";
+    }
+    if (child.biologicalParent === "self") return "illegitimate";
+    return "none";
+  }
+  function classifyIllegitimateChildren(list) {
+    let legitimatedCount = 0, illegitimateSelfCount = 0; const unclearChildIds = [];
+    for (const child of list) {
+      const c = classifyIllegitimateChild(child);
+      if (c === "legitimated") legitimatedCount++;
+      else if (c === "illegitimate") illegitimateSelfCount++;
+      else if (c === "unclear") unclearChildIds.push(child.id);
+    }
+    return { legitimatedCount, illegitimateSelfCount, unclearChildIds };
+  }
+
+  function calculateIntestateUnits({ heirs, spouseEligible }) {
+    const legitimateCount = heirs.legitimateChildren.length;
+    const adoptedCount = heirs.adoptedChildren.length;
+    const { legitimatedCount, illegitimateSelfCount, unclearChildIds } = classifyIllegitimateChildren(heirs.illegitimateChildren);
+    const effectiveLegitimateCount = legitimateCount + adoptedCount + legitimatedCount;
+    const totalUnits = UNITS.legitimateChild * effectiveLegitimateCount + UNITS.illegitimateChild * illegitimateSelfCount + (spouseEligible ? UNITS.spouse : 0);
+    return { legitimateCount, adoptedCount, legitimatedCount, illegitimateSelfCount, unclearChildIds, effectiveLegitimateCount, spouseEligible, totalUnits };
+  }
+  function calculateIntestateLegitime({ collatedBase, heirs, spouseEligible }) {
+    const units = calculateIntestateUnits({ heirs, spouseEligible });
+    const valuePerUnit = units.totalUnits === 0 ? 0 : collatedBase / units.totalUnits;
+    const entitlements = [];
+    for (const c of heirs.legitimateChildren) entitlements.push({ heirId: c.id, label: c.label, heirType: "legitimateChild", grossEntitlement: UNITS.legitimateChild * valuePerUnit });
+    for (const c of heirs.adoptedChildren) entitlements.push({ heirId: c.id, label: c.label, heirType: "adoptedChild", grossEntitlement: UNITS.adoptedChild * valuePerUnit });
+    for (const c of heirs.illegitimateChildren) {
+      const cls = classifyIllegitimateChild(c);
+      if (cls === "legitimated") entitlements.push({ heirId: c.id, label: c.label, heirType: "legitimatedChild", grossEntitlement: UNITS.legitimateChild * valuePerUnit });
+      else if (cls === "illegitimate") entitlements.push({ heirId: c.id, label: c.label, heirType: "illegitimateChild", grossEntitlement: UNITS.illegitimateChild * valuePerUnit });
+    }
+    if (spouseEligible) entitlements.push({ heirId: "spouse", label: "Spouse", heirType: "spouse", grossEntitlement: UNITS.spouse * valuePerUnit });
+    return { units, valuePerUnit, entitlements };
+  }
+  function assertEqualChildEntitlements(entitlements) {
+    const amounts = entitlements.filter((e) => e.heirType === "legitimateChild" || e.heirType === "adoptedChild" || e.heirType === "legitimatedChild").map((e) => e.grossEntitlement);
+    const distinct = new Set(amounts.map((v) => Math.round(v * 100)));
+    if (distinct.size > 1) throw new Error("Engine bug: legitimate/adopted/legitimated children's entitlements are not equal.");
+  }
+  function applyCollationCatchUp({ entitlements, priorGifts, remainingEstateAtDeath }) {
+    const flags = []; let totalNeededFromRemainingEstate = 0;
+    const detail = entitlements.map((e) => {
+      const alreadyReceived = priorGifts.filter((g) => g.heirId === e.heirId).reduce((s, g) => s + g.valueAtTimeOfGift, 0);
+      const remainingEntitlement = e.grossEntitlement - alreadyReceived;
+      let capped;
+      if (remainingEntitlement < 0) { flags.push({ type: "gift_exceeds_entitlement", heirId: e.heirId }); capped = 0; }
+      else capped = remainingEntitlement;
+      totalNeededFromRemainingEstate += capped;
+      return Object.assign({}, e, { alreadyReceived, remainingEntitlement, cappedRemainingEntitlement: capped });
+    });
+    if (totalNeededFromRemainingEstate > remainingEstateAtDeath) {
+      flags.push({ type: "insufficient_estate_to_equalize", shortfall: totalNeededFromRemainingEstate - remainingEstateAtDeath });
+    }
+    return { detail, totalNeededFromRemainingEstate, flags };
+  }
+  function calculateTestateLegitimeFloor({ collatedBase, heirs, spouseEligible }) {
+    const numLegitimateUnitChildren = heirs.legitimateChildren.length + heirs.adoptedChildren.length;
+    const illegitimateSelfCount = countDecedentsIllegitimateChildren(heirs.illegitimateChildren);
+    const legitimateChildrenPool = 0.5 * collatedBase;
+    const perLegitimateOrAdoptedChildFloor = numLegitimateUnitChildren > 0 ? legitimateChildrenPool / numLegitimateUnitChildren : 0;
+    const spouseFloor = spouseEligible ? perLegitimateOrAdoptedChildFloor : 0;
+    const perIllegitimateChildFloor = illegitimateSelfCount > 0 ? perLegitimateOrAdoptedChildFloor / 2 : 0;
+    const freePortion = collatedBase - legitimateChildrenPool - spouseFloor - perIllegitimateChildFloor * illegitimateSelfCount;
+    return { legitimateChildrenPool, perLegitimateOrAdoptedChildFloor, freePortion, spouseFloor, perIllegitimateChildFloor,
+      note: "These are the minimum amounts your will must give each heir. This tool cannot verify your actual will's distribution — have Getty review your will's terms against this floor." };
+  }
+
+  function isSpouseDisqualified(dq) { return dq && dq.offendingParty === "spouse"; }
+  function netProfitForfeitureFlag(dq) {
+    const m = dq && dq.mechanism;
+    if (m !== "legal_separation" && m !== "annulment_bad_faith") return null;
+    return { type: "net_profit_forfeiture_descriptive", note: "Mechanic A — descriptive only; requires community-property value at time of marriage, not computed." };
+  }
+  function detectFamilyHomeCoOwnershipRisk({ assets, illegitimateChildren, mode, hasArt1080Partition }) {
+    const exists = countDecedentsIllegitimateChildren(illegitimateChildren) > 0;
+    if (!exists) return [];
+    if (mode === "testate" && hasArt1080Partition) return [];
+    return assets.filter((a) => a.category === "real_property" && a.isFamilyHome === true && a.natureOfUse === "primary_residence")
+      .map((a) => ({ type: "family_home_co_ownership_risk", assetId: a.id }));
+  }
+  function detectVoidUnionFlags(maritalRegime) {
+    if (maritalRegime === "void_union_147") return [{ type: "void_union_bad_faith_not_computed" }];
+    if (maritalRegime === "void_union_148") return [{ type: "void_union_art148_needs_review" }];
+    return [];
+  }
+  function detectUnclearLegitimationFlags(ids) { return (ids || []).map((heirId) => ({ type: "legitimation_status_unclear", heirId })); }
+  function detectNoEligibleHeirClassFlag(heirs) { return heirs.noEligibleHeirClass === true ? [{ type: "no_modeled_heir_class" }] : []; }
+
+  function calculateEstate(input) {
+    const heirs = input.heirs, assets = input.assets;
+    const liabilities = input.liabilities || [], priorGifts = input.priorGifts || [];
+    const hasWill = !!input.hasWill, disqualification = input.disqualification || null;
+    const hasArt1080Partition = !!input.hasArt1080Partition;
+    const liabilitiesTotal = liabilities.reduce((s, l) => s + l.value, 0);
+
+    const grossEstate = calculateGrossEstate(assets, input.maritalRegime);
+    const familyHomeDeduction = calculateFamilyHomeDeduction(assets, input.maritalRegime);
+    const netTaxableEstate = calculateNetTaxableEstate(grossEstate, familyHomeDeduction, liabilitiesTotal);
+    const estateTax = calculateEstateTax(netTaxableEstate);
+    const cpaCertificationRequired = requiresCPACertification(grossEstate);
+    const ejsEligible = isEJSEligible({ hasWill, liabilities, heirs });
+
+    const netHereditaryEstate = grossEstate - liabilitiesTotal;
+    const priorGiftsTotal = priorGifts.reduce((s, g) => s + g.valueAtTimeOfGift, 0);
+    const collatedBase = netHereditaryEstate + priorGiftsTotal;
+    const spouseEligible = !!heirs.spouseAlive && !isSpouseDisqualified(disqualification);
+
+    const flags = []; let legitime;
+    if (!hasWill) {
+      const r = calculateIntestateLegitime({ collatedBase, heirs, spouseEligible });
+      assertEqualChildEntitlements(r.entitlements);
+      const cu = applyCollationCatchUp({ entitlements: r.entitlements, priorGifts, remainingEstateAtDeath: input.remainingEstateAtDeath != null ? input.remainingEstateAtDeath : netHereditaryEstate });
+      flags.push.apply(flags, cu.flags);
+      legitime = { mode: "intestate", units: r.units, valuePerUnit: r.valuePerUnit, entitlements: cu.detail, totalNeededFromRemainingEstate: cu.totalNeededFromRemainingEstate };
+      flags.push.apply(flags, detectUnclearLegitimationFlags(r.units.unclearChildIds));
+    } else {
+      legitime = { mode: "testate", floor: calculateTestateLegitimeFloor({ collatedBase, heirs, spouseEligible }) };
+    }
+
+    flags.push.apply(flags, detectFamilyHomeCoOwnershipRisk({ assets, illegitimateChildren: heirs.illegitimateChildren, mode: hasWill ? "testate" : "intestate", hasArt1080Partition }));
+    const ff = netProfitForfeitureFlag(disqualification); if (ff) flags.push(ff);
+    flags.push.apply(flags, detectVoidUnionFlags(input.maritalRegime));
+    flags.push.apply(flags, detectNoEligibleHeirClassFlag(heirs));
+
+    return { grossEstate, standardDeduction: STANDARD_DEDUCTION, familyHomeDeduction, liabilitiesTotal, netTaxableEstate, estateTax,
+      cpaCertificationRequired, ejsEligible, netHereditaryEstate, priorGiftsTotal, collatedBase, spouseEligible, legitime, flags };
+  }
+
+  return { resolveMaritalRegime, calculateEstate, decedentShareOfAsset };
+})();
+
+// =====================================================================================
+// App state, storage, navigation
+// =====================================================================================
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzulx21UqykC1I0Q4wds-IFTOlUiZeEmY9VdBnHpilEVD9eSqafts1ZtRSSSLhacupNWA/exec";
+const STORAGE_KEY = "heiriq_state_v1";
+
+function uid() { return Math.random().toString(36).slice(2, 10); }
+
+function freshState() {
+  return {
+    accessToken: "",
+    marriage: { status: "married", marriageDate: "", hasPrenup: false, prenupRegime: "", voidGround: "", voidImpediment: "",
+      priorMarriageLiquidated: "", annulmentBadFaith: "", legalSeparationOffendingParty: "" },
+    heirs: { legitimateChildren: [], adoptedChildren: [], illegitimateChildren: [], spouseAlive: true,
+      livingParents: null, hasPredeceasedChildWithDescendants: null, hasDisputedFiliationClaim: null, noEligibleHeirClass: false },
+    assets: [],
+    liabilities: [],
+    priorGifts: [],
+    hasWill: false,
+    insurance: { hasInsurance: null, totalCoverage: "" },
+    recipientEmail: "",
+  };
+}
+
+let state = freshState();
+let screen = "accessGate";
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, screen })); } catch (e) { /* private-mode storage can throw; save-and-resume degrades silently */ }
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    state = parsed.state; screen = parsed.screen || "landing";
+    return true;
+  } catch (e) { return false; }
+}
+
+const SECTION_ORDER = ["sectionA", "sectionB", "sectionC1", "sectionC2", "sectionC3", "sectionC4", "sectionC5", "sectionCLiab", "sectionD", "sectionE"];
+function sectionProgress(id) {
+  const idx = SECTION_ORDER.indexOf(id);
+  return { n: idx + 1, total: SECTION_ORDER.length, pct: Math.round(((idx + 1) / SECTION_ORDER.length) * 100) };
+}
+
+function go(next) {
+  screen = next;
+  saveState();
+  render();
+  window.scrollTo(0, 0);
+}
+
+// =====================================================================================
+// Value bands (Build Brief §2 — representative numeric estimate per band; midpoint of
+// closed ranges, a conservative point for open-ended "X+" bands)
+// =====================================================================================
+const VALUE_BANDS = {
+  real_property: [["Under ₱2M", 1000000], ["₱2M – ₱5M", 3500000], ["₱5M – ₱10M", 7500000], ["₱10M – ₱20M", 15000000], ["₱20M – ₱50M", 35000000], ["₱50M – ₱100M", 75000000], ["₱100M+", 120000000]],
+  vehicle: [["Under ₱1M", 600000], ["₱1M – ₱2M", 1500000], ["₱2M – ₱4M", 3000000], ["₱4M – ₱8M", 6000000], ["₱8M+", 10000000]],
+  financial: [["₱1M – ₱5M", 3000000], ["₱5M – ₱10M", 7500000], ["₱10M – ₱15M", 12500000], ["₱15M+", 18000000]],
+  business_shares: [["Under ₱2M", 1000000], ["₱2M – ₱5M", 3500000], ["₱5M – ₱10M", 7500000], ["₱10M – ₱20M", 15000000], ["₱20M – ₱50M", 35000000], ["₱50M+", 65000000]],
+  personal: [["Under ₱100K", 50000], ["₱100K – ₱500K", 300000], ["₱500K – ₱1M", 750000], ["₱1M – ₱3M", 2000000], ["₱3M – ₱5M", 4000000], ["₱5M+", 6500000]],
+};
+const CURRENCIES = ["PHP", "USD", "EUR", "JPY", "SGD", "AUD", "GBP"];
+const FX_FALLBACK_RATES = { USD: 56.5, EUR: 61.2, JPY: 0.38, SGD: 42.0, AUD: 37.0, GBP: 71.5 }; // used only if the live Frankfurter fetch fails
+
+function peso(n) {
+  return "₱" + Math.round(n || 0).toLocaleString("en-US");
+}
+function money(n) {
+  return "₱" + Math.round(n || 0).toLocaleString("en-US");
+}
+
+// =====================================================================================
+// Rendering
+// =====================================================================================
+const app = document.getElementById("app");
+
+function render() {
+  const renderers = {
+    accessGate: screenAccessGate, landing: screenLanding, consentNotice: screenConsentNotice,
+    sectionA: screenSectionA, sectionB: screenSectionB,
+    sectionC1: screenC1, sectionC2: screenC2, sectionC3: screenC3, sectionC4: screenC4, sectionC5: screenC5, sectionCLiab: screenCLiab,
+    sectionD: screenD, sectionE: screenE,
+    consentFinal: screenConsentFinal, results: screenResults, confirmation: screenConfirmation,
+  };
+  app.innerHTML = (renderers[screen] || screenLanding)();
+  bindHandlers();
+}
+
+function markSvg() {
+  return '<svg class="mark" viewBox="0 0 200 200"><defs>' +
+    '<linearGradient id="ng" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7A5638"/><stop offset="100%" stop-color="#4A2E1A"/></linearGradient>' +
+    '<linearGradient id="ngs" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#A6836A"/><stop offset="100%" stop-color="#6B4A30"/></linearGradient>' +
+    '<linearGradient id="gg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E0BA6A"/><stop offset="100%" stop-color="#9C7223"/></linearGradient></defs>' +
+    '<path d="M112,20 C120,15 140,18 156,32 C168,45 172,58 165,68 C158,76 148,70 145,58 C138,38 120,25 100,22 C90,20 82,18 84,14 Z" fill="url(#ng)"/>' +
+    '<path d="M60,72 C90,58 130,60 158,84 C172,98 176,112 168,122 C160,130 148,122 144,106 C132,80 100,66 68,80 C58,84 54,80 60,72 Z" fill="url(#gg)"/>' +
+    '<path d="M100,96 L52,168 L64,174 L108,104 Z" fill="url(#ng)"/><path d="M105,96 L92,178 L104,180 L114,100 Z" fill="url(#ngs)"/>' +
+    '<path d="M110,96 L138,178 L126,180 L100,100 Z" fill="url(#ngs)"/><path d="M115,96 L168,164 L158,172 L104,104 Z" fill="url(#ng)"/></svg>';
+}
+
+function topbar(title) {
+  const p = sectionProgress(screen);
+  return '<div class="form-topbar"><span class="progress-label">Section ' + p.n + ' of ' + p.total + (title ? " — " + title : "") + '</span><span class="saved-indicator">Saved ✓</span></div>' +
+    '<div class="progress-track"><div class="progress-fill" style="width:' + p.pct + '%"></div></div>';
+}
+function navButtons(backAction, continueAction, continueLabel, disabled) {
+  return '<div class="nav-buttons">' +
+    '<button class="btn-secondary" data-action="' + backAction + '">Back</button>' +
+    '<button class="btn-primary-flow" data-action="' + continueAction + '" ' + (disabled ? "disabled" : "") + '>' + (continueLabel || "Continue") + '</button>' +
+    '</div>';
+}
+
+// ---- Access Gate --------------------------------------------------------------------
+function screenAccessGate() {
+  return '<div class="center-pad">' + markSvg() +
+    '<h1 class="brand-name">HeirIQ</h1>' +
+    '<p class="value-prop" style="font-size:17px;">This assessment is by invitation. Enter your access code to continue.</p>' +
+    '<div class="field" style="text-align:left; max-width:260px; margin:0 auto 16px auto;">' +
+    '<label>Access code</label><input type="text" id="accessTokenInput" placeholder="e.g. HEIR-XXXX" value="' + esc(state.accessToken) + '">' +
+    '</div>' +
+    '<button class="cta-primary" id="accessGateSubmit">Continue</button>' +
+    '<p class="error-text" id="accessGateError"></p>' +
+    '</div>';
+}
+
+// ---- Landing --------------------------------------------------------------------
+function screenLanding() {
+  return '<div class="center-pad">' + markSvg() +
+    '<h1 class="brand-name">HeirIQ</h1>' +
+    '<p class="value-prop">See where your estate plan has gaps.</p>' +
+    '<button class="cta-primary" data-action="go:consentNotice">Start<span class="sub">About 15 minutes</span></button>' +
+    '<p class="attribution"><span class="name">Getty Balictar</span> · Certified Wealth Planner</p>' +
+    '</div>';
+}
+
+// ---- Consent Notice (Touchpoint 1) --------------------------------------------------
+function screenConsentNotice() {
+  return '<div class="consent-body">' +
+    '<h2 class="consent-title">Before we begin</h2>' +
+    '<p class="consent-copy">HeirIQ is a private, self-paced discovery tool. <strong>No personal information you enter is transmitted or stored outside your device until you choose to email yourself the results at the end.</strong></p>' +
+    '<p class="consent-copy">The one narrow exception: if you enter a foreign-currency account, we look up that day’s exchange rate from a public rate source so we can show you the peso equivalent. That lookup carries only a currency pair (e.g. “USD to PHP”) — nothing about you.</p>' +
+    '<p class="consent-copy">Your answers are saved locally on this device as you go, so you can close the tab and pick up where you left off. This is an educational estimate, not legal or tax advice — built by Getty Balictar, Certified Wealth Planner, to help you spot gaps worth a real conversation.</p>' +
+    '<label class="consent-check"><input type="checkbox" id="consentCheck" ' + (state._consent1 ? "checked" : "") + '> I understand and want to continue.</label>' +
+    navButtons("go:landing", "go:sectionA", "Continue", !state._consent1) +
+    '</div>';
+}
+
+// ---- Section A: Marital History ------------------------------------------------------
+function screenSectionA() {
+  const m = state.marriage;
+  const statuses = ["single", "married", "widowed", "annulled", "void", "legally_separated"];
+  const statusLabels = { single: "Single", married: "Married", widowed: "Widowed", annulled: "Annulled", void: "Void marriage", legally_separated: "Legally separated" };
+  let html = topbar("Marital History") + '<div class="form-body">' +
+    '<h2 class="form-title">Marital history</h2>' +
+    '<p class="form-helper">A quick refresher: property you owned before marriage is usually still just yours. Property acquired during marriage is usually considered jointly owned by both spouses — unless you signed a prenuptial agreement saying otherwise.</p>' +
+    '<div class="chip-row">' + statuses.map((s) => '<div class="chip' + (m.status === s ? " selected" : "") + '" data-action="setStatus:' + s + '">' + statusLabels[s] + '</div>').join("") + '</div>';
+
+  if (m.status !== "single") {
+    html += '<div class="field" style="margin-top:16px;"><label>Marriage date</label><input type="date" id="marriageDate" value="' + esc(m.marriageDate) + '"></div>';
+    html += '<div class="minor-row" style="margin-top:14px;"><span>Prenuptial agreement?</span><div class="minor-yn">' +
+      ynButtons("hasPrenup", m.hasPrenup === true, m.hasPrenup === false) + '</div></div>';
+    if (m.hasPrenup) {
+      html += '<div class="field" style="margin-top:10px;"><label>Regime specified in the prenup</label>' +
+        '<select id="prenupRegime"><option value="">Select…</option><option value="ACP"' + (m.prenupRegime === "ACP" ? " selected" : "") + '>Absolute Community of Property</option>' +
+        '<option value="CPG"' + (m.prenupRegime === "CPG" ? " selected" : "") + '>Conjugal Partnership of Gains</option>' +
+        '<option value="forced_separation"' + (m.prenupRegime === "forced_separation" ? " selected" : "") + '>Complete separation of property</option></select></div>';
+    }
+  }
+
+  if (m.status === "void") {
+    html += '<div class="reveal"><div class="callout">A void marriage is different from an annulled one — it means the marriage was never legally valid in the first place, as opposed to one that was valid until a court ended it. This affects both property and how any children are classified.</div>' +
+      '<div class="field"><label>Was this marriage declared void specifically because of psychological incapacity, or for another reason (such as a missing marriage license, a prior existing marriage, or a relationship the law prohibits)?</label>' +
+      '<select id="voidGround"><option value="">Select…</option><option value="psychological_incapacity"' + (m.voidGround === "psychological_incapacity" ? " selected" : "") + '>Psychological incapacity</option>' +
+      '<option value="other"' + (m.voidGround === "other" ? " selected" : "") + '>Another reason</option></select></div>' +
+      '<div class="field" style="margin-top:14px;"><label>At the time of this marriage, was either of you already validly married to someone else, or otherwise legally barred from marrying the other?</label>' +
+      '<select id="voidImpediment"><option value="">Select…</option><option value="no"' + (m.voidImpediment === "no" ? " selected" : "") + '>No</option>' +
+      '<option value="yes"' + (m.voidImpediment === "yes" ? " selected" : "") + '>Yes</option><option value="not_sure"' + (m.voidImpediment === "not_sure" ? " selected" : "") + '>Not sure</option></select></div></div>';
+  }
+  if (m.status === "widowed") {
+    html += '<div class="reveal"><div class="field"><label>Was your prior marriage’s property formally settled/liquidated before you remarried (if applicable)?</label>' +
+      '<select id="priorMarriageLiquidated"><option value="">N/A — no remarriage</option><option value="yes"' + (m.priorMarriageLiquidated === "yes" ? " selected" : "") + '>Yes</option>' +
+      '<option value="no"' + (m.priorMarriageLiquidated === "no" ? " selected" : "") + '>No</option><option value="not_sure"' + (m.priorMarriageLiquidated === "not_sure" ? " selected" : "") + '>Not sure</option></select></div></div>';
+  }
+  if (m.status === "annulled") {
+    html += '<div class="reveal"><div class="field"><label>Did the annulment decree find either party in bad faith?</label>' +
+      '<select id="annulmentBadFaith"><option value="">Select…</option><option value="none"' + (m.annulmentBadFaith === "none" ? " selected" : "") + '>No</option>' +
+      '<option value="self"' + (m.annulmentBadFaith === "self" ? " selected" : "") + '>Me</option><option value="spouse"' + (m.annulmentBadFaith === "spouse" ? " selected" : "") + '>My spouse</option></select></div></div>';
+  }
+  if (m.status === "legally_separated") {
+    html += '<div class="reveal"><div class="field"><label>Did the legal separation decree identify an offending spouse?</label>' +
+      '<select id="legalSeparationOffendingParty"><option value="">Select…</option><option value="none"' + (m.legalSeparationOffendingParty === "none" ? " selected" : "") + '>No</option>' +
+      '<option value="self"' + (m.legalSeparationOffendingParty === "self" ? " selected" : "") + '>Me</option><option value="spouse"' + (m.legalSeparationOffendingParty === "spouse" ? " selected" : "") + '>My spouse</option></select></div></div>';
+  }
+
+  html += navButtons("go:consentNotice", "go:sectionB", "Continue") + '</div>';
+  return html;
+}
+function ynButtons(field, yesSel, noSel) {
+  return '<button class="' + (yesSel ? "selected" : "") + '" data-action="setBool:' + field + ':1">Yes</button>' +
+    '<button class="' + (noSel ? "selected" : "") + '" data-action="setBool:' + field + ':0">No</button>';
+}
+
+// ---- Section B: Family Structure -----------------------------------------------------
+function childCard(list, idx, kind, showBioQuestion) {
+  const c = list[idx];
+  let html = '<div class="child-card">' +
+    '<div class="child-card-row"><div class="field"><label>Nickname or initials</label><input type="text" data-child-field="label" data-kind="' + kind + '" data-idx="' + idx + '" value="' + esc(c.label) + '"></div>' +
+    '<div class="field" style="max-width:90px;"><label>Birth order</label><input type="text" data-child-field="birthOrder" data-kind="' + kind + '" data-idx="' + idx + '" value="' + esc(c.birthOrder || "") + '"></div></div>';
+
+  if (showBioQuestion) {
+    html += '<div class="field" style="margin-bottom:12px;"><label>Is this child biologically…</label>' +
+      '<select data-child-field="biologicalParent" data-kind="' + kind + '" data-idx="' + idx + '">' +
+      '<option value="self"' + (c.biologicalParent === "self" ? " selected" : "") + '>Yours</option>' +
+      '<option value="spouse"' + (c.biologicalParent === "spouse" ? " selected" : "") + '>Your spouse’s</option>' +
+      '<option value="both"' + (c.biologicalParent === "both" ? " selected" : "") + '>Both of yours, from before we married</option></select></div>';
+    if (c.biologicalParent === "both") {
+      html += '<div class="callout"><label style="display:block; font-size:12.5px; color:var(--narra-soft); margin-bottom:8px; font-weight:600;">At the time this child was conceived, was either of you already married to someone else?</label>' +
+        '<div class="minor-yn">' +
+        '<button class="' + (c.legitimationImpediment === "yes" ? "selected" : "") + '" data-action="setChild:' + kind + ':' + idx + ':legitimationImpediment:yes">Yes</button>' +
+        '<button class="' + (c.legitimationImpediment === "no" ? "selected" : "") + '" data-action="setChild:' + kind + ':' + idx + ':legitimationImpediment:no">No</button>' +
+        '<button class="' + (c.legitimationImpediment === "not_sure" || !c.legitimationImpediment ? "selected" : "") + '" data-action="setChild:' + kind + ':' + idx + ':legitimationImpediment:not_sure">Not sure</button>' +
+        '</div></div>';
+    }
+  }
+
+  html += '<div class="minor-row"><span>Currently under 18?</span><div class="minor-yn">' +
+    '<button class="' + (c.isMinor === true ? "selected" : "") + '" data-action="setChild:' + kind + ':' + idx + ':isMinor:1">Yes</button>' +
+    '<button class="' + (c.isMinor === false ? "selected" : "") + '" data-action="setChild:' + kind + ':' + idx + ':isMinor:0">No</button></div></div>' +
+    '<div class="remove-link" data-action="removeChild:' + kind + ':' + idx + '">Remove</div></div>';
+  return html;
+}
+
+function screenSectionB() {
+  const h = state.heirs;
+  let html = topbar("Family") + '<div class="form-body">';
+
+  html += '<h2 class="form-title">Your children</h2>' +
+    '<p class="form-helper">You can use a nickname or initials instead of full legal names.</p>';
+  h.legitimateChildren.forEach((c, i) => { html += childCard(h.legitimateChildren, i, "legitimateChildren", false); });
+  html += '<button class="add-btn" data-action="addChild:legitimateChildren">+ Add a legitimate child</button>';
+
+  html += '<div class="section-divider">Adopted children</div>' +
+    '<p class="form-helper">Include any children you’ve legally adopted — under Philippine law, they have the same inheritance rights as your biological legitimate children.</p>';
+  h.adoptedChildren.forEach((c, i) => { html += childCard(h.adoptedChildren, i, "adoptedChildren", false); });
+  html += '<button class="add-btn" data-action="addChild:adoptedChildren">+ Add an adopted child</button>';
+
+  html += '<div class="section-divider">Other children</div>' +
+    '<div class="yn-question" style="padding-top:0;"><p class="yn-text" style="font-size:16px;">Do you or your spouse have a child from a previous relationship, or from before this marriage?</p>' +
+    '<div class="yn-buttons">' +
+    '<button class="yn-btn' + (state._showIllegitimate ? " selected" : "") + '" data-action="toggleIllegitimate:1">Yes</button>' +
+    '<button class="yn-btn' + (!state._showIllegitimate && h.illegitimateChildren.length === 0 ? " selected" : "") + '" data-action="toggleIllegitimate:0">No</button>' +
+    '</div></div>';
+  if (state._showIllegitimate || h.illegitimateChildren.length > 0) {
+    h.illegitimateChildren.forEach((c, i) => { html += childCard(h.illegitimateChildren, i, "illegitimateChildren", true); });
+    html += '<button class="add-btn" data-action="addChild:illegitimateChildren">+ Add another</button>';
+  }
+
+  html += '<div class="section-divider">A few more things</div>';
+  html += '<div class="simple-q"><p class="simple-q-text">Is your spouse currently living?</p><div class="yn-buttons">' + ynButtons("spouseAlive", h.spouseAlive === true, h.spouseAlive === false) + '</div></div>';
+  html += '<div class="simple-q"><p class="simple-q-text">Has any child of yours passed away before you, leaving children of their own?</p><div class="yn-buttons">' + ynButtons("hasPredeceasedChildWithDescendants", h.hasPredeceasedChildWithDescendants === true, h.hasPredeceasedChildWithDescendants === false) + '</div></div>';
+  html += '<div class="simple-q"><p class="simple-q-text">Is there anyone who believes they are your child, but this hasn’t been legally established?</p><div class="yn-buttons">' + ynButtons("hasDisputedFiliationClaim", h.hasDisputedFiliationClaim === true, h.hasDisputedFiliationClaim === false) + '</div></div>';
+  html += '<div class="simple-q"><p class="simple-q-text">Do you have any living parents?</p><div class="yn-buttons">' + ynButtons("livingParents", h.livingParents === true, h.livingParents === false) + '</div></div>';
+
+  const noChildren = h.legitimateChildren.length + h.adoptedChildren.length + h.illegitimateChildren.length === 0;
+  if (noChildren && h.spouseAlive === false && h.livingParents === false) {
+    html += '<div class="callout" style="margin-top:16px;">Your situation may involve other relatives as heirs under Philippine law — this needs a direct conversation with Getty rather than an automated estimate.</div>';
+  }
+
+  html += navButtons("go:sectionA", "go:sectionC1", "Continue") + '</div>';
+  return html;
+}
+
+// ---- Section C: Assets ----------------------------------------------------------------
+function bandSelect(category, current) {
+  const bands = VALUE_BANDS[category];
+  return '<select data-band="' + category + '">' + '<option value="">Select a range…</option>' +
+    bands.map((b) => '<option value="' + b[1] + '"' + (String(current) === String(b[1]) ? " selected" : "") + '>' + b[0] + '</option>').join("") +
+    '<option value="skip"' + (current === "skip" ? " selected" : "") + '>Not sure / Skip</option></select>';
+}
+function assetsOfCategory(cat) { return state.assets.filter((a) => a.category === cat); }
+
+function assetValueFields(a) {
+  return '<div class="band-row"><div class="field"><label>Approximate range</label>' + bandSelect(a.category, a.value.confidence === "estimated" ? a.value.value : "") + replaceBandAttr(a) +
+    '</div></div><div class="field" style="margin-bottom:12px;"><label>Or exact amount (PHP)</label>' +
+    '<input type="number" data-asset-field="exactValue" data-id="' + a.id + '" placeholder="e.g. 4500000" value="' + (a.value.confidence === "exact" ? a.value.value : "") + '"></div>';
+}
+function replaceBandAttr(a) { return ""; }
+
+function screenC1() {
+  const list = assetsOfCategory("real_property");
+  let html = topbar("Assets — Real Estate") + '<div class="form-body">' +
+    '<h2 class="form-title">Real estate</h2><p class="form-helper">Include any land, house, condominium, or commercial property you or your spouse own.</p>';
+  list.forEach((a) => {
+    html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetValueFields(a) +
+      '<div class="field" style="margin-bottom:12px;"><label>Nature of use</label><select data-asset-field="natureOfUse" data-id="' + a.id + '">' +
+      ["primary_residence", "rental_investment", "commercial", "agricultural_vacant", "other"].map((v) => '<option value="' + v + '"' + (a.natureOfUse === v ? " selected" : "") + '>' + v.replace(/_/g, " ") + '</option>').join("") + '</select></div>' +
+      '<div class="field" style="margin-bottom:12px;"><label>Ownership structure</label><select data-asset-field="ownershipStructure" data-id="' + a.id + '">' +
+      '<option value="direct"' + (a.ownershipStructure === "direct" ? " selected" : "") + '>Directly owned</option>' +
+      '<option value="via_business_entity"' + (a.ownershipStructure === "via_business_entity" ? " selected" : "") + '>Owned via a business entity I hold shares in</option></select></div>' +
+      acquisitionSelect(a) +
+      '<div class="minor-row"><span>This is our family home</span><div class="minor-yn">' +
+      '<button class="' + (a.isFamilyHome ? "selected" : "") + '" data-action="setAssetBool:' + a.id + ':isFamilyHome:1">Yes</button>' +
+      '<button class="' + (!a.isFamilyHome ? "selected" : "") + '" data-action="setAssetBool:' + a.id + ':isFamilyHome:0">No</button></div></div>' +
+      '<div class="remove-link" data-action="removeAsset:' + a.id + '">Remove</div></div>';
+  });
+  html += '<button class="add-btn" data-action="addAsset:real_property">+ Add a property</button>';
+  html += navButtons("go:sectionB", "go:sectionC2", "Continue") + '</div>';
+  return html;
+}
+function acquisitionSelect(a) {
+  return '<div class="field" style="margin-bottom:12px;"><label>Acquired…</label><select data-asset-field="acquisitionTiming" data-id="' + a.id + '">' +
+    '<option value="before_marriage"' + (a.acquisitionTiming === "before_marriage" ? " selected" : "") + '>Before marriage</option>' +
+    '<option value="during_marriage_gift_inheritance"' + (a.acquisitionTiming === "during_marriage_gift_inheritance" ? " selected" : "") + '>During marriage, by gift or inheritance</option>' +
+    '<option value="during_marriage_effort_income"' + (a.acquisitionTiming === "during_marriage_effort_income" ? " selected" : "") + '>During marriage, through work/income</option></select></div>';
+}
+function screenC2() {
+  const list = assetsOfCategory("vehicle");
+  let html = topbar("Assets — Vehicles") + '<div class="form-body">' +
+    '<h2 class="form-title">Vehicles</h2><p class="form-helper">Include cars, motorcycles, or other titled vehicles you or your spouse own personally.</p>';
+  list.forEach((a) => {
+    html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetValueFields(a) + acquisitionSelect(a) +
+      '<div class="remove-link" data-action="removeAsset:' + a.id + '">Remove</div></div>';
+  });
+  html += '<button class="add-btn" data-action="addAsset:vehicle">+ Add a vehicle</button>';
+  html += navButtons("go:sectionC1", "go:sectionC3", "Continue") + '</div>';
+  return html;
+}
+function screenC3() {
+  const list = assetsOfCategory("financial");
+  let html = topbar("Assets — Financial Accounts") + '<div class="form-body">' +
+    '<h2 class="form-title">Financial accounts</h2><p class="form-helper">Savings, time deposits, stocks, mutual funds, UITFs, bonds, and other investment holdings. Business shares go in the next category, not here.</p>';
+  list.forEach((a) => {
+    const currency = a.currency || "PHP";
+    html += '<div class="asset-card" data-asset-id="' + a.id + '">' +
+      '<div class="field" style="margin-bottom:12px;"><label>Currency</label><select data-asset-field="currency" data-id="' + a.id + '">' +
+      CURRENCIES.map((c) => '<option value="' + c + '"' + (currency === c ? " selected" : "") + '>' + c + '</option>').join("") + '</select></div>';
+    if (currency !== "PHP") {
+      html += '<div class="field" style="margin-bottom:8px;"><label>Amount in ' + currency + '</label>' +
+        '<input type="number" data-asset-field="originalAmount" data-id="' + a.id + '" value="' + (a.originalAmount || "") + '"></div>';
+      if (a.fxRate) {
+        html += '<div class="fx-preview">Converted using the ' + esc(a.fxRateDate || "") + ' ' + esc(a.fxRateSource === "BSP" ? "BSP reference rate" : "rate you entered") + ': <b>' + peso(a.value.value) + '</b></div>';
+      } else {
+        html += '<div class="field" style="margin-bottom:8px;"><label>Or the peso equivalent, if you know it</label><input type="number" data-asset-field="exactValue" data-id="' + a.id + '" value="' + (a.value.confidence === "exact" ? a.value.value : "") + '"></div>';
+      }
+    } else {
+      html += assetValueFields(a);
+    }
+    html += acquisitionSelect(a) + '<div class="remove-link" data-action="removeAsset:' + a.id + '">Remove</div></div>';
+  });
+  html += '<button class="add-btn" data-action="addAsset:financial">+ Add a financial account</button>';
+  html += navButtons("go:sectionC2", "go:sectionC4", "Continue") + '</div>';
+  return html;
+}
+function screenC4() {
+  const list = assetsOfCategory("business_shares");
+  let html = topbar("Assets — Business Shares") + '<div class="form-body">' +
+    '<h2 class="form-title">Business / corporate shares</h2><p class="form-helper">Your ownership stake in a privately-held business — not publicly-traded stock.</p>' +
+    '<div class="minor-row" style="margin-bottom:18px;"><span>Do you or your family own shares in a privately-held business?</span><div class="minor-yn">' +
+    '<button class="' + (state._hasBizShares ? "selected" : "") + '" data-action="toggleBiz:1">Yes</button>' +
+    '<button class="' + (!state._hasBizShares && list.length === 0 ? "selected" : "") + '" data-action="toggleBiz:0">No</button></div></div>';
+  if (state._hasBizShares || list.length > 0) {
+    list.forEach((a) => {
+      html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetValueFields(a) +
+        '<div class="field" style="margin-bottom:12px;"><label>Valuation method</label><select data-asset-field="businessValuationMethod" data-id="' + a.id + '">' +
+        ["book_value", "last_transaction", "par_value", "not_sure"].map((v) => '<option value="' + v + '"' + (a.businessValuationMethod === v ? " selected" : "") + '>' + v.replace(/_/g, " ") + '</option>').join("") + '</select>' +
+        '<p class="field-note">Estimated — independent appraisal likely required.</p></div>' +
+        '<div class="field" style="margin-bottom:12px;"><label>Is this the same entity that owns a property you tagged “via a business entity” in Real Estate?</label>' +
+        '<p class="field-note">If so, that property’s value is already represented here — you don’t need to enter it twice.</p></div>' +
+        '<div class="remove-link" data-action="removeAsset:' + a.id + '">Remove</div></div>';
+    });
+    html += '<button class="add-btn" data-action="addAsset:business_shares">+ Add a business/shareholding</button>';
+  }
+  html += navButtons("go:sectionC3", "go:sectionC5", "Continue") + '</div>';
+  return html;
+}
+function screenC5() {
+  const list = assetsOfCategory("personal");
+  let html = topbar("Assets — Personal Property") + '<div class="form-body">' +
+    '<h2 class="form-title">Personal property</h2><p class="form-helper">Jewelry, collectibles, and other valuables.</p>';
+  list.forEach((a) => {
+    html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetValueFields(a) + acquisitionSelect(a) +
+      '<div class="remove-link" data-action="removeAsset:' + a.id + '">Remove</div></div>';
+  });
+  html += '<button class="add-btn" data-action="addAsset:personal">+ Add an item</button>';
+  html += navButtons("go:sectionC4", "go:sectionCLiab", "Continue") + '</div>';
+  return html;
+}
+function screenCLiab() {
+  let html = topbar("Assets — Liabilities") + '<div class="form-body">' +
+    '<h2 class="form-title">Debts against the estate</h2><p class="form-helper">Outstanding loans, mortgages, or other debts.</p>';
+  state.liabilities.forEach((l) => {
+    html += '<div class="asset-card"><div class="child-card-row"><div class="field"><label>Description</label>' +
+      '<input type="text" data-liab-field="description" data-id="' + l.id + '" value="' + esc(l.description || "") + '"></div>' +
+      '<div class="field"><label>Amount (PHP)</label><input type="number" data-liab-field="value" data-id="' + l.id + '" value="' + (l.value || "") + '"></div></div>' +
+      '<div class="remove-link" data-action="removeLiability:' + l.id + '">Remove</div></div>';
+  });
+  html += '<button class="add-btn" data-action="addLiability">+ Add a debt</button>';
+  html += navButtons("go:sectionC5", "go:sectionD", "Continue") + '</div>';
+  return html;
+}
+
+// ---- Section D: Prior Gifts -----------------------------------------------------------
+function allChildHeirs() {
+  const h = state.heirs;
+  return [].concat(
+    h.legitimateChildren.map((c) => ({ id: c.id, label: c.label || "Child" })),
+    h.adoptedChildren.map((c) => ({ id: c.id, label: (c.label || "Child") + " (adopted)" })),
+    h.illegitimateChildren.map((c) => ({ id: c.id, label: c.label || "Child" }))
+  );
+}
+function screenD() {
+  const heirs = allChildHeirs();
+  let html = topbar("Prior Gifts") + '<div class="form-body">' +
+    '<h2 class="form-title">Gifts already given</h2><p class="form-helper">Lifetime gifts to any of your children count as advances on their inheritance and get factored back in — an unequal gift isn’t automatically a problem, but it does change the math.</p>';
+  state.priorGifts.forEach((g) => {
+    html += '<div class="asset-card"><div class="child-card-row">' +
+      '<div class="field"><label>To</label><select data-gift-field="heirId" data-id="' + g.id + '">' +
+      heirs.map((h) => '<option value="' + h.id + '"' + (g.heirId === h.id ? " selected" : "") + '>' + esc(h.label) + '</option>').join("") + '</select></div>' +
+      '<div class="field"><label>Amount at time of gift</label><input type="number" data-gift-field="valueAtTimeOfGift" data-id="' + g.id + '" value="' + (g.valueAtTimeOfGift || "") + '"></div></div>' +
+      '<div class="field"><label>Date</label><input type="date" data-gift-field="date" data-id="' + g.id + '" value="' + esc(g.date || "") + '"></div>' +
+      '<div class="remove-link" data-action="removeGift:' + g.id + '">Remove</div></div>';
+  });
+  html += '<button class="add-btn" data-action="addGift"' + (heirs.length === 0 ? " disabled" : "") + '>+ Add a gift</button>';
+  html += navButtons("go:sectionCLiab", "go:sectionE", "Continue") + '</div>';
+  return html;
+}
+
+// ---- Section E: Insurance & Documents --------------------------------------------------
+function screenE() {
+  const ins = state.insurance;
+  let html = topbar("Insurance & Documents") + '<div class="form-body">' +
+    '<h2 class="form-title">Insurance &amp; existing documents</h2>';
+  html += '<div class="simple-q"><p class="simple-q-text">Do you currently have a will?</p><div class="yn-buttons">' + ynButtons("hasWill", state.hasWill === true, state.hasWill === false) + '</div></div>';
+  html += '<div class="simple-q"><p class="simple-q-text">Do you have any life insurance policies naming beneficiaries?</p><div class="yn-buttons">' +
+    '<button class="yn-btn' + (ins.hasInsurance === true ? " selected" : "") + '" data-action="setInsurance:1">Yes</button>' +
+    '<button class="yn-btn' + (ins.hasInsurance === false ? " selected" : "") + '" data-action="setInsurance:0">No</button></div></div>';
+  if (ins.hasInsurance) {
+    html += '<div class="field"><label>Approximate total coverage (PHP)</label><input type="number" id="insuranceCoverage" value="' + (ins.totalCoverage || "") + '"></div>';
+  }
+  html += navButtons("go:sectionD", "go:consentFinal", "Continue") + '</div>';
+  return html;
+}
+
+// ---- Consent Final (Touchpoint 2) ------------------------------------------------------
+function screenConsentFinal() {
+  return '<div class="consent-body">' +
+    '<h2 class="consent-title">Almost done</h2>' +
+    '<p class="consent-copy">We’ll generate your personalized results now. If you’d like a copy emailed to you, enter your email below — this is the point where any information leaves your device.</p>' +
+    '<div class="field" style="margin-bottom:14px;"><label>Email (optional)</label><input type="email" id="recipientEmail" placeholder="you@example.com" value="' + esc(state.recipientEmail) + '"></div>' +
+    '<label class="consent-check"><input type="checkbox" id="consentFinalCheck" ' + (state._consentFinal ? "checked" : "") + '> I understand this is an educational estimate, not legal or tax advice, and consent to receive my results.</label>' +
+    navButtons("go:sectionE", "computeAndShowResults", "See my results", !state._consentFinal) +
+    '</div>';
+}
+
+// ---- Results ----------------------------------------------------------------------------
+const FLAG_COPY = {
+  gift_exceeds_entitlement: { title: "Prior Gift Exceeds Share", tag: "consult", stat: "One heir already received more than their eventual share", caption: "This can’t be clawed back — it just means less is available to equalize the rest of the estate.", fix: "Consider how remaining assets are allocated to keep things fair." },
+  insufficient_estate_to_equalize: { title: "Legitime Shortfall Risk", tag: "consult", stat: "The remaining estate may not be enough to equalize all heirs", caption: "One heir’s earlier gift can’t be recovered, and what’s left may fall short of what others are still owed.", fix: "Insurance or a lifetime restructuring can close this gap before it becomes a dispute." },
+  family_home_co_ownership_risk: { title: "Family Home Co-Ownership Risk", tag: "consult", stat: "An heir outside your immediate family could become a co-owner of your home", caption: "Without planning, this heir’s share could attach directly to the family home itself.", fix: "A partition (Art. 1080) can assign the home elsewhere, as long as that heir’s share is satisfied in value from other assets." },
+  net_profit_forfeiture_descriptive: { title: "Property Forfeiture on Record", tag: "consult", stat: "A forfeiture provision applies to this marriage", caption: "The exact amount depends on the property’s value at the time of the marriage — this tool can’t compute that figure.", fix: "A lawyer can help establish the historical valuation needed here." },
+  void_union_bad_faith_not_computed: { title: "Void Marriage — Property Split", tag: "estimated", stat: "Property from this union is presumed split equally (Art. 147)", caption: "Any bad-faith forfeiture on top of this presumption isn’t computed here.", fix: "A lawyer can confirm whether forfeiture applies to your situation." },
+  void_union_art148_needs_review: { title: "Void Marriage — Needs Review", tag: "consult", stat: "Property from this union used your own estimate, not a legal default", caption: "Because an impediment existed, the law requires proof of actual contribution — there’s no automatic 50/50 split here.", fix: "A lawyer can help establish each party’s actual, provable contribution." },
+  legitimation_status_unclear: { title: "Legitimation Status Unclear", tag: "consult", stat: "One child’s legitimation status needs confirming", caption: "Whether an impediment existed at conception changes this child’s share materially.", fix: "Confirm the facts with Getty before finalizing any plan." },
+  no_modeled_heir_class: { title: "Heirs Beyond This Tool’s Scope", tag: "consult", stat: "No children, spouse, or living parents indicated", caption: "Philippine law would pass your estate to more distant relatives (siblings, nephews, nieces) in this situation — a case this tool doesn’t model.", fix: "This needs a direct conversation with Getty rather than an automated estimate." },
+};
+
+function buildEngineInput() {
+  const m = state.marriage;
+  const maritalRegime = m.status === "single" ? "ACP" : Engine.resolveMaritalRegime({
+    status: m.status, marriageDate: m.marriageDate, hasPrenup: m.hasPrenup, prenupRegime: m.prenupRegime,
+    voidImpediment: m.voidImpediment, remarriedWithoutLiquidation: m.status === "widowed" && m.priorMarriageLiquidated !== "yes" && m.priorMarriageLiquidated !== "",
+  });
+  let disqualification = null;
+  if (m.status === "annulled" && m.annulmentBadFaith && m.annulmentBadFaith !== "none") {
+    disqualification = { mechanism: "annulment_bad_faith", offendingParty: m.annulmentBadFaith };
+  } else if (m.status === "legally_separated" && m.legalSeparationOffendingParty && m.legalSeparationOffendingParty !== "none") {
+    disqualification = { mechanism: "legal_separation", offendingParty: m.legalSeparationOffendingParty };
+  }
+  return {
+    maritalRegime, heirs: state.heirs, assets: state.assets, liabilities: state.liabilities,
+    priorGifts: state.priorGifts, hasWill: state.hasWill, disqualification,
+  };
+}
+
+let lastResult = null;
+function screenResults() {
+  const result = lastResult || (lastResult = Engine.calculateEstate(buildEngineInput()));
+  let html = '<div class="results"><div class="results-header"><p class="label">Estimated Total Exposure</p>' +
+    '<div class="exposure-row"><p class="exposure-amount">' + money(result.estateTax) + '</p><div class="seal">家</div></div></div>';
+
+  html += '<div class="category"><div class="cat-header"><p class="cat-title">Estate Tax</p><span class="tag ' + (result.cpaCertificationRequired ? "consult" : "confirmed") + '">' + (result.cpaCertificationRequired ? "Needs Consultation" : "Estimated") + '</span></div>' +
+    '<p class="cat-stat">' + money(result.grossEstate) + ' gross estate</p>' +
+    '<p class="cat-caption">Net taxable estate: ' + money(result.netTaxableEstate) + '. Estate tax (6%): ' + money(result.estateTax) + '.' + (result.cpaCertificationRequired ? " Since your gross estate exceeds ₱5,000,000, a CPA-certified statement will be required regardless of tax due." : "") + '</p>' +
+    '<p class="cat-fix"><b>EJS eligible:</b> ' + (result.ejsEligible ? "Yes — no will, no debts, no minor heirs on file." : "No — a court settlement process will likely be required.") + '</p></div>';
+
+  html += '<div class="category"><div class="cat-header"><p class="cat-title">Legitime &amp; Heirs</p><span class="tag confirmed">Confirmed</span></div>';
+  if (result.legitime.mode === "intestate") {
+    html += '<p class="cat-stat">' + result.legitime.entitlements.length + ' heir(s) — unit method</p>';
+    result.legitime.entitlements.forEach((e) => {
+      const receivedPct = e.grossEntitlement > 0 ? Math.min(100, Math.round((e.alreadyReceived / e.grossEntitlement) * 100)) : 0;
+      html += '<div class="bar-row"><div class="bar-label"><span>' + esc(e.label || e.heirType) + '</span><span>' + money(e.grossEntitlement) + '</span></div>' +
+        '<div class="bar-track"><div class="bar-received" style="width:' + receivedPct + '%"></div><div class="bar-remaining" style="width:' + (100 - receivedPct) + '%"></div></div></div>';
+    });
+    html += '<div class="bar-legend"><span><i class="dot" style="background:var(--narra-soft)"></i>Already received</span><span><i class="dot" style="background:var(--gold)"></i>Remaining share</span></div>';
+  } else {
+    const f = result.legitime.floor;
+    html += '<p class="cat-stat">Testate — guaranteed minimum floor</p>' +
+      '<p class="cat-caption">Each legitimate/adopted/legitimated child: ' + money(f.perLegitimateOrAdoptedChildFloor) + '. Spouse: ' + money(f.spouseFloor) + '. Each illegitimate child: ' + money(f.perIllegitimateChildFloor) + '. Free portion: ' + money(f.freePortion) + '.</p>' +
+      '<p class="cat-fix">' + f.note + '</p>';
+  }
+  html += '</div>';
+
+  const seen = {};
+  result.flags.forEach((f) => {
+    const copy = FLAG_COPY[f.type];
+    if (!copy || seen[f.type]) return;
+    seen[f.type] = true;
+    html += '<div class="category"><div class="cat-header"><p class="cat-title">' + copy.title + '</p><span class="tag ' + copy.tag + '">' + (copy.tag === "consult" ? "Needs Consultation" : "Estimated — Verify") + '</span></div>' +
+      '<p class="cat-stat">' + copy.stat + '</p><p class="cat-caption">' + copy.caption + '</p><p class="cat-fix"><b>Fix:</b> ' + copy.fix + '</p></div>';
+  });
+
+  html += '<p class="disclaimer">Not legal or tax advice. Estimates only — verify with a professional.</p>' +
+    '<div class="cta-footer">' +
+    '<button class="cta-primary" id="emailResultsBtn">Email me my results</button>' +
+    '<p class="error-text" id="submitError"></p></div></div>';
+  return html;
+}
+
+// ---- Confirmation -----------------------------------------------------------------------
+function screenConfirmation() {
+  return '<div class="center-pad">' + markSvg() +
+    '<h1 class="brand-name" style="font-size:24px;">You’re all set</h1>' +
+    '<p class="value-prop" style="font-size:16px;">Your results are on their way to your inbox. Getty typically follows up within a few business days on anything flagged for consultation.</p>' +
+    '<p class="attribution"><span class="name">Getty Balictar</span> · Certified Wealth Planner</p></div>';
+}
+
+function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+// =====================================================================================
+// Event handling (delegated) + mutations
+// =====================================================================================
+function findAsset(id) { return state.assets.find((a) => a.id === id); }
+function findChildList(kind) { return state.heirs[kind]; }
+
+function bindHandlers() {
+  app.querySelectorAll("select, input[type=date], input[type=email]").forEach((el) => {
+    el.addEventListener("change", handleFieldChange);
+  });
+  app.querySelectorAll('input[type=number], input[type=text]:not([id])').forEach((el) => {
+    el.addEventListener("input", handleFieldChange);
+  });
+  app.querySelectorAll("[data-action]").forEach((el) => {
+    el.addEventListener("click", handleAction);
+  });
+  const gate = document.getElementById("accessGateSubmit");
+  if (gate) gate.addEventListener("click", submitAccessGate);
+  const emailBtn = document.getElementById("emailResultsBtn");
+  if (emailBtn) emailBtn.addEventListener("click", submitFinal);
+}
+
+function handleFieldChange(e) {
+  const el = e.target;
+  if (el.id === "accessTokenInput") { state.accessToken = el.value; return; }
+  if (el.id === "marriageDate") { state.marriage.marriageDate = el.value; return; }
+  if (el.id === "prenupRegime") { state.marriage.prenupRegime = el.value; return; }
+  if (el.id === "voidGround") { state.marriage.voidGround = el.value; return; }
+  if (el.id === "voidImpediment") { state.marriage.voidImpediment = el.value; return; }
+  if (el.id === "priorMarriageLiquidated") { state.marriage.priorMarriageLiquidated = el.value; return; }
+  if (el.id === "annulmentBadFaith") { state.marriage.annulmentBadFaith = el.value; return; }
+  if (el.id === "legalSeparationOffendingParty") { state.marriage.legalSeparationOffendingParty = el.value; return; }
+  if (el.id === "recipientEmail") { state.recipientEmail = el.value; return; }
+  if (el.id === "consentCheck") { state._consent1 = el.checked; render(); return; }
+  if (el.id === "consentFinalCheck") { state._consentFinal = el.checked; render(); return; }
+  if (el.id === "insuranceCoverage") { state.insurance.totalCoverage = el.value; return; }
+
+  if (el.hasAttribute("data-child-field")) {
+    const kind = el.getAttribute("data-kind"), idx = +el.getAttribute("data-idx"), field = el.getAttribute("data-child-field");
+    const child = findChildList(kind)[idx];
+    child[field] = el.value;
+    if (field === "biologicalParent") render();
+    return;
+  }
+  if (el.hasAttribute("data-band")) {
+    const cat = el.getAttribute("data-band");
+    const card = el.closest(".asset-card");
+    const id = card.getAttribute("data-asset-id");
+    const asset = findAsset(id);
+    if (el.value === "skip") { asset.value = { value: 0, confidence: "default" }; }
+    else if (el.value) { asset.value = { value: Number(el.value), confidence: "estimated" }; }
+    render();
+    return;
+  }
+  if (el.hasAttribute("data-asset-field")) {
+    const id = el.getAttribute("data-id"), field = el.getAttribute("data-asset-field");
+    const asset = findAsset(id);
+    if (field === "exactValue") { asset.value = { value: Number(el.value) || 0, confidence: "exact" }; }
+    else if (field === "currency") { asset.currency = el.value; if (el.value !== "PHP") fetchFxRate(asset); render(); }
+    else if (field === "originalAmount") { asset.originalAmount = Number(el.value) || 0; if (asset.currency && asset.currency !== "PHP") fetchFxRate(asset); }
+    else { asset[field] = el.value; }
+    return;
+  }
+  if (el.hasAttribute("data-liab-field")) {
+    const id = el.getAttribute("data-id"), field = el.getAttribute("data-liab-field");
+    const liab = state.liabilities.find((l) => l.id === id);
+    liab[field] = field === "value" ? Number(el.value) || 0 : el.value;
+    return;
+  }
+  if (el.hasAttribute("data-gift-field")) {
+    const id = el.getAttribute("data-id"), field = el.getAttribute("data-gift-field");
+    const gift = state.priorGifts.find((g) => g.id === id);
+    gift[field] = field === "valueAtTimeOfGift" ? Number(el.value) || 0 : el.value;
+    return;
+  }
+  saveState();
+}
+
+function handleAction(e) {
+  const action = e.currentTarget.getAttribute("data-action");
+  const [cmd, ...rest] = action.split(":");
+
+  if (cmd === "go") { go(rest[0]); return; }
+  if (cmd === "computeAndShowResults") { lastResult = Engine.calculateEstate(buildEngineInput()); go("results"); return; }
+
+  if (cmd === "setStatus") { state.marriage.status = rest[0]; render(); saveState(); return; }
+  if (cmd === "setBool") {
+    const field = rest[0], val = rest[1] === "1";
+    if (["hasPredeceasedChildWithDescendants", "hasDisputedFiliationClaim", "livingParents", "spouseAlive"].includes(field)) state.heirs[field] = val;
+    else if (field === "hasWill") state.hasWill = val;
+    else state.marriage[field] = val;
+    render(); saveState(); return;
+  }
+  if (cmd === "setChild") {
+    const [kind, idx, field, val] = rest;
+    const child = findChildList(kind)[+idx];
+    child[field] = field === "isMinor" ? val === "1" : val;
+    render(); saveState(); return;
+  }
+  if (cmd === "addChild") {
+    findChildList(rest[0]).push({ id: uid(), label: "", birthOrder: "", isMinor: false, biologicalParent: "self" });
+    render(); saveState(); return;
+  }
+  if (cmd === "removeChild") {
+    const list = findChildList(rest[0]); list.splice(+rest[1], 1);
+    render(); saveState(); return;
+  }
+  if (cmd === "toggleIllegitimate") {
+    state._showIllegitimate = rest[0] === "1";
+    if (state._showIllegitimate && state.heirs.illegitimateChildren.length === 0) {
+      state.heirs.illegitimateChildren.push({ id: uid(), label: "", birthOrder: "", isMinor: false, biologicalParent: "self" });
+    }
+    if (rest[0] === "0") state.heirs.illegitimateChildren = [];
+    render(); saveState(); return;
+  }
+
+  if (cmd === "addAsset") {
+    const category = rest[0];
+    const asset = { id: uid(), category, value: { value: 0, confidence: "default" }, acquisitionTiming: "during_marriage_effort_income" };
+    if (category === "real_property") Object.assign(asset, { isFamilyHome: false, natureOfUse: "primary_residence", ownershipStructure: "direct" });
+    if (category === "financial") Object.assign(asset, { currency: "PHP", originalAmount: 0, fxRate: null, fxRateDate: null, fxRateSource: null });
+    if (category === "business_shares") Object.assign(asset, { businessValuationMethod: "not_sure" });
+    state.assets.push(asset);
+    render(); saveState(); return;
+  }
+  if (cmd === "removeAsset") { state.assets = state.assets.filter((a) => a.id !== rest[0]); render(); saveState(); return; }
+  if (cmd === "setAssetBool") { findAsset(rest[0])[rest[1]] = rest[2] === "1"; render(); saveState(); return; }
+  if (cmd === "toggleBiz") { state._hasBizShares = rest[0] === "1"; render(); saveState(); return; }
+
+  if (cmd === "addLiability") { state.liabilities.push({ id: uid(), description: "", value: 0 }); render(); saveState(); return; }
+  if (cmd === "removeLiability") { state.liabilities = state.liabilities.filter((l) => l.id !== rest[0]); render(); saveState(); return; }
+
+  if (cmd === "addGift") {
+    const heirs = allChildHeirs();
+    if (heirs.length === 0) return;
+    state.priorGifts.push({ id: uid(), heirId: heirs[0].id, valueAtTimeOfGift: 0, date: "" });
+    render(); saveState(); return;
+  }
+  if (cmd === "removeGift") { state.priorGifts = state.priorGifts.filter((g) => g.id !== rest[0]); render(); saveState(); return; }
+
+  if (cmd === "setInsurance") { state.insurance.hasInsurance = rest[0] === "1"; render(); saveState(); return; }
+}
+
+// =====================================================================================
+// Foreign-currency conversion (§3.2b, LB-10) — Frankfurter API, no personal data sent.
+// =====================================================================================
+async function fetchFxRate(asset) {
+  try {
+    const res = await fetch("https://api.frankfurter.dev/v1/latest?from=" + asset.currency + "&to=PHP");
+    if (!res.ok) throw new Error("rate fetch failed");
+    const data = await res.json();
+    const rate = data.rates && data.rates.PHP;
+    if (typeof rate !== "number") throw new Error("no PHP rate returned");
+    asset.fxRate = rate; asset.fxRateDate = data.date; asset.fxRateSource = "BSP";
+    asset.value = { value: (asset.originalAmount || 0) * rate, confidence: "estimated" };
+  } catch (e) {
+    const fallback = FX_FALLBACK_RATES[asset.currency];
+    if (fallback) {
+      asset.fxRate = fallback; asset.fxRateDate = "fallback"; asset.fxRateSource = "manual_entry";
+      asset.value = { value: (asset.originalAmount || 0) * fallback, confidence: "estimated" };
+    } else {
+      asset.fxRateSource = "manual_entry";
+    }
+  }
+  render(); saveState();
+}
+
+// =====================================================================================
+// Backend integration
+//
+// NOTE: this sandbox's outbound network policy blocks script.google.com, so the exact
+// GET/POST response contract below could not be verified against the live endpoint from
+// here. The calls are written defensively (any non-throwing response is treated as
+// success) — confirm the actual response shape against the live Apps Script deployment
+// during a real device test pass, and tighten the success check if it returns a
+// structured {ok:false} error body rather than a non-2xx status.
+// =====================================================================================
+async function submitAccessGate() {
+  const btn = document.getElementById("accessGateSubmit");
+  const errEl = document.getElementById("accessGateError");
+  const token = document.getElementById("accessTokenInput").value.trim();
+  state.accessToken = token;
+  errEl.textContent = "";
+  if (!token) { errEl.textContent = "Enter your access code to continue."; return; }
+  btn.disabled = true; btn.textContent = "Checking…";
+  try {
+    const res = await fetch(BACKEND_URL + "?a=" + encodeURIComponent(token));
+    if (!res.ok) throw new Error("access check failed");
+    let valid = true;
+    try { const data = await res.json(); if (data && data.valid === false) valid = false; } catch (e) { /* non-JSON 200 response is treated as valid */ }
+    if (!valid) throw new Error("invalid code");
+    go("landing");
+  } catch (e) {
+    errEl.textContent = "That code didn’t work. Please check it and try again.";
+  } finally {
+    btn.disabled = false; btn.textContent = "Continue";
+  }
+}
+
+async function submitFinal() {
+  const btn = document.getElementById("emailResultsBtn");
+  const errEl = document.getElementById("submitError");
+  errEl.textContent = "";
+  if (!state.recipientEmail) { go("confirmation"); return; }
+  btn.disabled = true; btn.textContent = "Sending…";
+  try {
+    const pdfBase64 = buildResultsPdfBase64();
+    // Sent as a plain-string body (default Content-Type: text/plain;charset=utf-8) to
+    // avoid triggering a CORS preflight OPTIONS request against the Apps Script web app,
+    // which doGet/doPost endpoints commonly don't handle.
+    await fetch(BACKEND_URL, { method: "POST", body: JSON.stringify({ email: state.recipientEmail, pdfBase64 }) });
+    go("confirmation");
+  } catch (e) {
+    errEl.textContent = "We couldn’t send your results just now — please try again.";
+  } finally {
+    btn.disabled = false; btn.textContent = "Email me my results";
+  }
+}
+
+function buildResultsPdfBase64() {
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const r = lastResult || Engine.calculateEstate(buildEngineInput());
+    let y = 20;
+    doc.setFontSize(18); doc.text("HeirIQ — Estate Assessment", 14, y); y += 10;
+    doc.setFontSize(11);
+    doc.text("Gross estate: " + money(r.grossEstate), 14, y += 8);
+    doc.text("Net taxable estate: " + money(r.netTaxableEstate), 14, y += 8);
+    doc.text("Estate tax (6%): " + money(r.estateTax), 14, y += 8);
+    doc.text("CPA certification required: " + (r.cpaCertificationRequired ? "Yes" : "No"), 14, y += 8);
+    doc.text("EJS eligible: " + (r.ejsEligible ? "Yes" : "No"), 14, y += 8);
+    y += 4;
+    doc.setFontSize(13); doc.text("Legitime", 14, y += 8);
+    doc.setFontSize(11);
+    if (r.legitime.mode === "intestate") {
+      r.legitime.entitlements.forEach((e) => { doc.text((e.label || e.heirType) + ": " + money(e.grossEntitlement), 14, y += 7); });
+    } else {
+      const f = r.legitime.floor;
+      doc.text("Each legitimate/adopted child floor: " + money(f.perLegitimateOrAdoptedChildFloor), 14, y += 7);
+      doc.text("Spouse floor: " + money(f.spouseFloor), 14, y += 7);
+      doc.text("Illegitimate child floor: " + money(f.perIllegitimateChildFloor), 14, y += 7);
+    }
+    y += 4;
+    doc.setFontSize(9);
+    doc.text("Not legal or tax advice. Estimates only — verify with a professional.", 14, y += 10);
+    const datauri = doc.output("datauristring");
+    return datauri.split(",")[1];
+  } catch (e) {
+    return "";
+  }
+}
+
+// =====================================================================================
+// Boot: hidden test-mode shortcut (?test=1), otherwise restore saved state
+// =====================================================================================
+function loadTestModeState() {
+  state = freshState();
+  state.accessToken = "TEST";
+  state.marriage = { status: "married", marriageDate: "1995-06-12", hasPrenup: false, prenupRegime: "", voidGround: "", voidImpediment: "", priorMarriageLiquidated: "", annulmentBadFaith: "", legalSeparationOffendingParty: "" };
+  state.heirs.legitimateChildren = [{ id: uid(), label: "Child A", birthOrder: 1, isMinor: false }, { id: uid(), label: "Child B", birthOrder: 2, isMinor: false }];
+  state.heirs.spouseAlive = true;
+  state.heirs.livingParents = false;
+  state.heirs.hasPredeceasedChildWithDescendants = false;
+  state.heirs.hasDisputedFiliationClaim = false;
+  state.assets = [
+    { id: uid(), category: "real_property", value: { value: 15000000, confidence: "exact" }, acquisitionTiming: "during_marriage_effort_income", isFamilyHome: true, natureOfUse: "primary_residence", ownershipStructure: "direct" },
+    { id: uid(), category: "financial", value: { value: 6000000, confidence: "exact" }, acquisitionTiming: "during_marriage_effort_income", currency: "PHP" },
+    { id: uid(), category: "vehicle", value: { value: 1500000, confidence: "exact" }, acquisitionTiming: "before_marriage" },
+  ];
+  state.hasWill = false;
+  state.insurance = { hasInsurance: false, totalCoverage: "" };
+  state.recipientEmail = "test@example.com";
+  state._consent1 = true; state._consentFinal = true;
+  lastResult = Engine.calculateEstate(buildEngineInput());
+  screen = "results";
+}
+
+(function boot() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("test") === "1") {
+    loadTestModeState();
+  } else if (!loadState()) {
+    state = freshState();
+    screen = "accessGate";
+  }
+  render();
+})();
+</script>
+
+</body>
+</html>
