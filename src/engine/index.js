@@ -3,7 +3,7 @@
 import { calculateGrossEstate } from "./grossEstate.js";
 import { calculateFamilyHomeDeduction, calculateNetTaxableEstate } from "./deductions.js";
 import { calculateEstateTax, requiresCPACertification } from "./estateTax.js";
-import { isEJSEligible } from "./ejs.js";
+import { isEJSEligible, ejsIneligibilityReasons } from "./ejs.js";
 import { calculateIntestateLegitime, applyCollationCatchUp, assertEqualChildEntitlements, calculateTestateLegitimeFloor } from "./legitime.js";
 import {
   isSpouseDisqualified,
@@ -12,6 +12,7 @@ import {
   detectVoidUnionFlags,
   detectNoEligibleHeirClassFlag,
   detectUnclearLegitimationFlags,
+  detectForcedSeparationFlag,
 } from "./flags.js";
 import { STANDARD_DEDUCTION } from "./constants.js";
 
@@ -56,6 +57,7 @@ export function calculateEstate(input) {
   const estateTax = calculateEstateTax(netTaxableEstate);
   const cpaCertificationRequired = requiresCPACertification(grossEstate);
   const ejsEligible = isEJSEligible({ hasWill, liabilities, heirs });
+  const ejsIneligibleReasons = ejsIneligibilityReasons({ hasWill, liabilities, heirs });
 
   // Legitime pool: net hereditary estate (assets minus debts, LB-6), plus collated gifts.
   const netHereditaryEstate = grossEstate - liabilitiesTotal;
@@ -108,6 +110,10 @@ export function calculateEstate(input) {
   // §3.7a (Decision #32) — collateral-relative trip-wire, descriptive only.
   flags.push(...detectNoEligibleHeirClassFlag(heirs));
 
+  // LB-2 — forced separation on remarriage without liquidation; was computed correctly
+  // but never surfaced as a distinct advisory until this flag existed.
+  flags.push(...detectForcedSeparationFlag(maritalRegime));
+
   return {
     grossEstate,
     standardDeduction: STANDARD_DEDUCTION,
@@ -117,6 +123,7 @@ export function calculateEstate(input) {
     estateTax,
     cpaCertificationRequired,
     ejsEligible,
+    ejsIneligibleReasons,
     netHereditaryEstate,
     priorGiftsTotal,
     collatedBase,

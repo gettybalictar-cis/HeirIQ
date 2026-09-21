@@ -71,3 +71,14 @@ export function detectUnclearLegitimationFlags(unclearChildIds = []) {
 export function detectNoEligibleHeirClassFlag(heirs) {
   return heirs.noEligibleHeirClass === true ? [{ type: "no_modeled_heir_class" }] : [];
 }
+
+/**
+ * LB-2: a surviving spouse who remarries without first liquidating the prior
+ * marriage's community/conjugal property is forced into complete separation of
+ * property for the new marriage — self-executing, no valuation needed. This was
+ * computed correctly (decedentShareOfAsset already treats it as fully exclusive)
+ * but never surfaced to the user as a distinct advisory until this flag was added.
+ */
+export function detectForcedSeparationFlag(maritalRegime) {
+  return maritalRegime === "forced_separation" ? [{ type: "forced_separation_applied" }] : [];
+}

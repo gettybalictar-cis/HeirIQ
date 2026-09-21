@@ -150,8 +150,8 @@
   .yn-question{ text-align:center; padding:10px 8px 8px 8px; }
   .yn-text{ font-family:'Fraunces', serif; font-weight:500; font-size:19px; color:var(--narra-deep); line-height:1.4; margin:0 0 22px 0; }
   .yn-buttons{ display:flex; gap:14px; justify-content:center; margin-bottom:8px; flex-wrap:wrap; }
-  .yn-btn{ width:110px; padding:16px 0; border-radius:8px; border:1.5px solid var(--hairline); background:var(--white); color:var(--narra-deep); font-family:'Source Sans 3',sans-serif; font-weight:700; font-size:15px; cursor:pointer; }
-  .yn-btn.selected{ background:var(--narra-deep); color:var(--ivory); border-color:var(--narra-deep); }
+  .yn-buttons button{ width:110px; padding:16px 0; border-radius:8px; border:1.5px solid var(--hairline); background:var(--white); color:var(--narra-deep); font-family:'Source Sans 3',sans-serif; font-weight:700; font-size:15px; cursor:pointer; }
+  .yn-buttons button.selected{ background:var(--narra-deep); color:var(--ivory); border-color:var(--narra-deep); }
 
   .chip-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; }
   .chip{ padding:9px 16px; border-radius:20px; border:1.5px solid var(--hairline); background:var(--white); color:var(--narra-deep); font-size:13.5px; font-weight:600; cursor:pointer; }
@@ -165,7 +165,7 @@
   .simple-q:last-child{ border-bottom:none; }
   .simple-q-text{ font-size:15.5px; color:var(--narra-deep); margin:0 0 12px 0; line-height:1.4; }
   .simple-q .yn-buttons{ justify-content:flex-start; }
-  .simple-q .yn-btn{ width:90px; padding:12px 0; font-size:14px; }
+  .simple-q .yn-buttons button{ width:90px; padding:12px 0; font-size:14px; }
 
   .band-row{ display:flex; gap:10px; margin-bottom:14px; }
   .fx-preview{ background:var(--ivory); border:1px solid var(--hairline); border-radius:6px; padding:10px 12px; font-size:13px; color:var(--narra-soft); margin-top:8px; }
@@ -285,6 +285,13 @@ const Engine = (function () {
   function isEJSEligible({ hasWill, liabilities, heirs }) {
     return !hasWill && liabilities.length === 0 && !hasAnyMinorHeir(heirs);
   }
+  function ejsIneligibilityReasons({ hasWill, liabilities, heirs }) {
+    const reasons = [];
+    if (hasWill) reasons.push("has_will");
+    if (liabilities.length > 0) reasons.push("has_liabilities");
+    if (hasAnyMinorHeir(heirs)) reasons.push("has_minor_heir");
+    return reasons;
+  }
 
   function isDecedentsBiologicalChild(c) { return c.biologicalParent === "self" || c.biologicalParent === "both"; }
   function countDecedentsIllegitimateChildren(list) { return list.filter(isDecedentsBiologicalChild).length; }
@@ -383,6 +390,7 @@ const Engine = (function () {
   }
   function detectUnclearLegitimationFlags(ids) { return (ids || []).map((heirId) => ({ type: "legitimation_status_unclear", heirId })); }
   function detectNoEligibleHeirClassFlag(heirs) { return heirs.noEligibleHeirClass === true ? [{ type: "no_modeled_heir_class" }] : []; }
+  function detectForcedSeparationFlag(maritalRegime) { return maritalRegime === "forced_separation" ? [{ type: "forced_separation_applied" }] : []; }
 
   function calculateEstate(input) {
     const heirs = input.heirs, assets = input.assets;
@@ -397,6 +405,7 @@ const Engine = (function () {
     const estateTax = calculateEstateTax(netTaxableEstate);
     const cpaCertificationRequired = requiresCPACertification(grossEstate);
     const ejsEligible = isEJSEligible({ hasWill, liabilities, heirs });
+    const ejsIneligibleReasons = ejsIneligibilityReasons({ hasWill, liabilities, heirs });
 
     const netHereditaryEstate = grossEstate - liabilitiesTotal;
     const priorGiftsTotal = priorGifts.reduce((s, g) => s + g.valueAtTimeOfGift, 0);
@@ -419,9 +428,10 @@ const Engine = (function () {
     const ff = netProfitForfeitureFlag(disqualification); if (ff) flags.push(ff);
     flags.push.apply(flags, detectVoidUnionFlags(input.maritalRegime));
     flags.push.apply(flags, detectNoEligibleHeirClassFlag(heirs));
+    flags.push.apply(flags, detectForcedSeparationFlag(input.maritalRegime));
 
     return { grossEstate, standardDeduction: STANDARD_DEDUCTION, familyHomeDeduction, liabilitiesTotal, netTaxableEstate, estateTax,
-      cpaCertificationRequired, ejsEligible, netHereditaryEstate, priorGiftsTotal, collatedBase, spouseEligible, legitime, flags };
+      cpaCertificationRequired, ejsEligible, ejsIneligibleReasons, netHereditaryEstate, priorGiftsTotal, collatedBase, spouseEligible, legitime, flags };
   }
 
   return { resolveMaritalRegime, calculateEstate, decedentShareOfAsset };
@@ -446,7 +456,7 @@ function freshState() {
     liabilities: [],
     priorGifts: [],
     hasWill: false,
-    insurance: { hasInsurance: null, totalCoverage: "" },
+    insurance: { hasInsurance: null, totalCoverage: "", beneficiaries: [] },
     recipientEmail: "",
   };
 }
@@ -697,6 +707,10 @@ function screenSectionB() {
   h.adoptedChildren.forEach((c, i) => { html += childCard(h.adoptedChildren, i, "adoptedChildren", false); });
   html += '<button class="add-btn" data-action="addChild:adoptedChildren">+ Add an adopted child</button>';
 
+  if (state.marriage.status === "void" && state.marriage.voidGround === "psychological_incapacity") {
+    html += '<div class="callout">Since your void marriage was on psychological-incapacity grounds, any children conceived or born before the court’s nullity judgment are automatically legitimate under the law (Art. 54) — enter them above as legitimate children, not through the “other children” question below.</div>';
+  }
+
   html += '<div class="section-divider">Other children</div>' +
     '<div class="yn-question" style="padding-top:0;"><p class="yn-text" style="font-size:16px;">Do you or your spouse have a child from a previous relationship, or from before this marriage?</p>' +
     '<div class="yn-buttons">' +
@@ -732,6 +746,17 @@ function bandSelect(category, current) {
 }
 function assetsOfCategory(cat) { return state.assets.filter((a) => a.category === cat); }
 
+// Build Brief §2b already defines a `description` field on every asset — it just never
+// had a form control. This renders it as a free-text "Label" so entries can be named
+// (e.g. "Taguig Apartment", "Toyota Hilux"); carries through to Results and the PDF.
+function assetLabelField(a, placeholder) {
+  return '<div class="field" style="margin-bottom:12px;"><label>Label</label>' +
+    '<input type="text" data-asset-field="description" data-id="' + a.id + '" placeholder="' + esc(placeholder) + '" value="' + esc(a.description || "") + '"></div>';
+}
+function assetLabel(a, fallback) {
+  return (a.description && a.description.trim()) || fallback;
+}
+
 function assetValueFields(a) {
   return '<div class="band-row"><div class="field"><label>Approximate range</label>' + bandSelect(a.category, a.value.confidence === "estimated" ? a.value.value : "") + replaceBandAttr(a) +
     '</div></div><div class="field" style="margin-bottom:12px;"><label>Or exact amount (PHP)</label>' +
@@ -744,7 +769,7 @@ function screenC1() {
   let html = topbar("Assets — Real Estate") + '<div class="form-body">' +
     '<h2 class="form-title">Real estate</h2><p class="form-helper">Include any land, house, condominium, or commercial property you or your spouse own.</p>';
   list.forEach((a) => {
-    html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetValueFields(a) +
+    html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetLabelField(a, "e.g. Taguig Apartment") + assetValueFields(a) +
       '<div class="field" style="margin-bottom:12px;"><label>Nature of use</label><select data-asset-field="natureOfUse" data-id="' + a.id + '">' +
       ["primary_residence", "rental_investment", "commercial", "agricultural_vacant", "other"].map((v) => '<option value="' + v + '"' + (a.natureOfUse === v ? " selected" : "") + '>' + v.replace(/_/g, " ") + '</option>').join("") + '</select></div>' +
       '<div class="field" style="margin-bottom:12px;"><label>Ownership structure</label><select data-asset-field="ownershipStructure" data-id="' + a.id + '">' +
@@ -771,7 +796,7 @@ function screenC2() {
   let html = topbar("Assets — Vehicles") + '<div class="form-body">' +
     '<h2 class="form-title">Vehicles</h2><p class="form-helper">Include cars, motorcycles, or other titled vehicles you or your spouse own personally.</p>';
   list.forEach((a) => {
-    html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetValueFields(a) + acquisitionSelect(a) +
+    html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetLabelField(a, "e.g. Toyota Hilux") + assetValueFields(a) + acquisitionSelect(a) +
       '<div class="remove-link" data-action="removeAsset:' + a.id + '">Remove</div></div>';
   });
   html += '<button class="add-btn" data-action="addAsset:vehicle">+ Add a vehicle</button>';
@@ -784,12 +809,12 @@ function screenC3() {
     '<h2 class="form-title">Financial accounts</h2><p class="form-helper">Savings, time deposits, stocks, mutual funds, UITFs, bonds, and other investment holdings. Business shares go in the next category, not here.</p>';
   list.forEach((a) => {
     const currency = a.currency || "PHP";
-    html += '<div class="asset-card" data-asset-id="' + a.id + '">' +
+    html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetLabelField(a, "e.g. BPI Savings") +
       '<div class="field" style="margin-bottom:12px;"><label>Currency</label><select data-asset-field="currency" data-id="' + a.id + '">' +
       CURRENCIES.map((c) => '<option value="' + c + '"' + (currency === c ? " selected" : "") + '>' + c + '</option>').join("") + '</select></div>';
     if (currency !== "PHP") {
       html += '<div class="field" style="margin-bottom:8px;"><label>Amount in ' + currency + '</label>' +
-        '<input type="number" data-asset-field="originalAmount" data-id="' + a.id + '" value="' + (a.originalAmount || "") + '"></div>';
+        '<input type="text" inputmode="decimal" data-asset-field="originalAmount" data-id="' + a.id + '" placeholder="e.g. 10000" value="' + (a.originalAmount || "") + '"></div>';
       if (a.fxRate) {
         html += '<div class="fx-preview">Converted using the ' + esc(a.fxRateDate || "") + ' ' + esc(a.fxRateSource === "BSP" ? "BSP reference rate" : "rate you entered") + ': <b>' + peso(a.value.value) + '</b></div>';
       } else {
@@ -813,7 +838,7 @@ function screenC4() {
     '<button class="' + (!state._hasBizShares && list.length === 0 ? "selected" : "") + '" data-action="toggleBiz:0">No</button></div></div>';
   if (state._hasBizShares || list.length > 0) {
     list.forEach((a) => {
-      html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetValueFields(a) +
+      html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetLabelField(a, "e.g. ABC Family Corp") + assetValueFields(a) +
         '<div class="field" style="margin-bottom:12px;"><label>Valuation method</label><select data-asset-field="businessValuationMethod" data-id="' + a.id + '">' +
         ["book_value", "last_transaction", "par_value", "not_sure"].map((v) => '<option value="' + v + '"' + (a.businessValuationMethod === v ? " selected" : "") + '>' + v.replace(/_/g, " ") + '</option>').join("") + '</select>' +
         '<p class="field-note">Estimated — independent appraisal likely required.</p></div>' +
@@ -831,7 +856,7 @@ function screenC5() {
   let html = topbar("Assets — Personal Property") + '<div class="form-body">' +
     '<h2 class="form-title">Personal property</h2><p class="form-helper">Jewelry, collectibles, and other valuables.</p>';
   list.forEach((a) => {
-    html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetValueFields(a) + acquisitionSelect(a) +
+    html += '<div class="asset-card" data-asset-id="' + a.id + '">' + assetLabelField(a, "e.g. Diamond ring") + assetValueFields(a) + acquisitionSelect(a) +
       '<div class="remove-link" data-action="removeAsset:' + a.id + '">Remove</div></div>';
   });
   html += '<button class="add-btn" data-action="addAsset:personal">+ Add an item</button>';
@@ -842,8 +867,8 @@ function screenCLiab() {
   let html = topbar("Assets — Liabilities") + '<div class="form-body">' +
     '<h2 class="form-title">Debts against the estate</h2><p class="form-helper">Outstanding loans, mortgages, or other debts.</p>';
   state.liabilities.forEach((l) => {
-    html += '<div class="asset-card"><div class="child-card-row"><div class="field"><label>Description</label>' +
-      '<input type="text" data-liab-field="description" data-id="' + l.id + '" value="' + esc(l.description || "") + '"></div>' +
+    html += '<div class="asset-card"><div class="child-card-row"><div class="field"><label>Label</label>' +
+      '<input type="text" data-liab-field="description" data-id="' + l.id + '" placeholder="e.g. Condo Mortgage" value="' + esc(l.description || "") + '"></div>' +
       '<div class="field"><label>Amount (PHP)</label><input type="number" data-liab-field="value" data-id="' + l.id + '" value="' + (l.value || "") + '"></div></div>' +
       '<div class="remove-link" data-action="removeLiability:' + l.id + '">Remove</div></div>';
   });
@@ -888,7 +913,28 @@ function screenE() {
     '<button class="yn-btn' + (ins.hasInsurance === true ? " selected" : "") + '" data-action="setInsurance:1">Yes</button>' +
     '<button class="yn-btn' + (ins.hasInsurance === false ? " selected" : "") + '" data-action="setInsurance:0">No</button></div></div>';
   if (ins.hasInsurance) {
-    html += '<div class="field"><label>Approximate total coverage (PHP)</label><input type="number" id="insuranceCoverage" value="' + (ins.totalCoverage || "") + '"></div>';
+    html += '<div class="field" style="margin-bottom:18px;"><label>Approximate total coverage (PHP)</label><input type="number" id="insuranceCoverage" value="' + (ins.totalCoverage || "") + '"></div>';
+
+    html += '<div class="section-divider">Beneficiaries</div>' +
+      '<p class="form-helper">Who is named on the policy, and how much of the coverage goes to each?</p>';
+    ins.beneficiaries.forEach((b) => {
+      html += '<div class="child-card"><div class="child-card-row">' +
+        '<div class="field"><label>Beneficiary name</label><input type="text" data-beneficiary-field="label" data-id="' + b.id + '" placeholder="e.g. Spouse, Child A" value="' + esc(b.label || "") + '"></div>' +
+        '<div class="field"><label>Allocation (PHP)</label><input type="number" data-beneficiary-field="allocation" data-id="' + b.id + '" value="' + (b.allocation || "") + '"></div>' +
+        '</div><div class="remove-link" data-action="removeBeneficiary:' + b.id + '">Remove</div></div>';
+    });
+    html += '<button class="add-btn" data-action="addBeneficiary">+ Add a beneficiary</button>';
+
+    if (ins.beneficiaries.length > 0) {
+      const totalCoverage = Number(ins.totalCoverage) || 0;
+      const allocated = ins.beneficiaries.reduce((s, b) => s + (Number(b.allocation) || 0), 0);
+      const remaining = totalCoverage - allocated;
+      html += '<div class="callout" style="margin-top:-8px;">Allocated so far: <b>' + money(allocated) + '</b> of ' + money(totalCoverage) + ' total coverage' +
+        (totalCoverage > 0 && remaining !== 0
+          ? (remaining > 0 ? ' — <b>' + money(remaining) + '</b> not yet assigned to anyone.' : ' — allocations exceed total coverage by <b>' + money(-remaining) + '</b>.')
+          : '.') +
+        '</div>';
+    }
   }
   html += navButtons("go:sectionD", "go:consentFinal", "Continue") + '</div>';
   return html;
@@ -906,16 +952,118 @@ function screenConsentFinal() {
 }
 
 // ---- Results ----------------------------------------------------------------------------
-const FLAG_COPY = {
-  gift_exceeds_entitlement: { title: "Prior Gift Exceeds Share", tag: "consult", stat: "One heir already received more than their eventual share", caption: "This can’t be clawed back — it just means less is available to equalize the rest of the estate.", fix: "Consider how remaining assets are allocated to keep things fair." },
-  insufficient_estate_to_equalize: { title: "Legitime Shortfall Risk", tag: "consult", stat: "The remaining estate may not be enough to equalize all heirs", caption: "One heir’s earlier gift can’t be recovered, and what’s left may fall short of what others are still owed.", fix: "Insurance or a lifetime restructuring can close this gap before it becomes a dispute." },
-  family_home_co_ownership_risk: { title: "Family Home Co-Ownership Risk", tag: "consult", stat: "An heir outside your immediate family could become a co-owner of your home", caption: "Without planning, this heir’s share could attach directly to the family home itself.", fix: "A partition (Art. 1080) can assign the home elsewhere, as long as that heir’s share is satisfied in value from other assets." },
-  net_profit_forfeiture_descriptive: { title: "Property Forfeiture on Record", tag: "consult", stat: "A forfeiture provision applies to this marriage", caption: "The exact amount depends on the property’s value at the time of the marriage — this tool can’t compute that figure.", fix: "A lawyer can help establish the historical valuation needed here." },
-  void_union_bad_faith_not_computed: { title: "Void Marriage — Property Split", tag: "estimated", stat: "Property from this union is presumed split equally (Art. 147)", caption: "Any bad-faith forfeiture on top of this presumption isn’t computed here.", fix: "A lawyer can confirm whether forfeiture applies to your situation." },
-  void_union_art148_needs_review: { title: "Void Marriage — Needs Review", tag: "consult", stat: "Property from this union used your own estimate, not a legal default", caption: "Because an impediment existed, the law requires proof of actual contribution — there’s no automatic 50/50 split here.", fix: "A lawyer can help establish each party’s actual, provable contribution." },
-  legitimation_status_unclear: { title: "Legitimation Status Unclear", tag: "consult", stat: "One child’s legitimation status needs confirming", caption: "Whether an impediment existed at conception changes this child’s share materially.", fix: "Confirm the facts with Getty before finalizing any plan." },
-  no_modeled_heir_class: { title: "Heirs Beyond This Tool’s Scope", tag: "consult", stat: "No children, spouse, or living parents indicated", caption: "Philippine law would pass your estate to more distant relatives (siblings, nephews, nieces) in this situation — a case this tool doesn’t model.", fix: "This needs a direct conversation with Getty rather than an automated estimate." },
+// ---------------------------------------------------------------------------
+// Flag → human-readable "why it fired / what it means" copy. Each renderer gets
+// every occurrence of its flag type (not deduped to one) so per-heir/per-asset
+// flags (e.g. two different children both legitimation_status_unclear) each get
+// their own, individually-named card rather than collapsing into one generic one.
+// ---------------------------------------------------------------------------
+function heirLabel(heirId) {
+  if (heirId === "spouse") return "Your spouse";
+  const all = [].concat(state.heirs.legitimateChildren, state.heirs.adoptedChildren, state.heirs.illegitimateChildren);
+  const h = all.find((c) => c.id === heirId);
+  return (h && h.label && h.label.trim()) ? h.label : "This heir";
+}
+function assetLabelById(assetId) {
+  const a = state.assets.find((x) => x.id === assetId);
+  return a ? assetLabel(a, "this property") : "this property";
+}
+function tagName(tag) { return tag === "consult" ? "Needs Consultation" : tag === "confirmed" ? "Confirmed" : "Estimated — Verify"; }
+function categoryCard(title, tag, stat, caption, fix) {
+  return '<div class="category"><div class="cat-header"><p class="cat-title">' + title + '</p><span class="tag ' + tag + '">' + tagName(tag) + '</span></div>' +
+    '<p class="cat-stat">' + stat + '</p><p class="cat-caption">' + caption + '</p>' +
+    (fix ? '<p class="cat-fix"><b>Fix:</b> ' + fix + '</p>' : '') + '</div>';
+}
+
+const FLAG_RENDERERS = {
+  gift_exceeds_entitlement: (occs) => occs.map((f) => {
+    const name = heirLabel(f.heirId);
+    return categoryCard("Prior Gift Exceeds Share", "consult",
+      name + " already received more than their eventual share",
+      name + "’s lifetime gift can’t be clawed back — it just means less is available from the remaining estate to equalize everyone else.",
+      "Consider how the remaining assets are allocated to keep things fair among the other heirs.");
+  }).join(""),
+  insufficient_estate_to_equalize: (occs) => occs.map((f) => categoryCard("Legitime Shortfall Risk", "consult",
+    "Short by " + money(f.shortfall),
+    "After factoring in gifts already given, what’s left of the estate isn’t enough to bring every heir up to their full share — short by " + money(f.shortfall) + ".",
+    "Insurance or a lifetime restructuring can close this gap before it becomes a dispute.")).join(""),
+  family_home_co_ownership_risk: (occs) => occs.map((f) => {
+    const propName = assetLabelById(f.assetId);
+    return categoryCard("Family Home Co-Ownership Risk", "consult",
+      "An heir outside your immediate family could become a co-owner of " + propName,
+      "Because an illegitimate child of yours is a compulsory heir, their share of the estate can attach directly to " + propName + " itself unless you plan around it.",
+      "A partition (Art. 1080) can assign " + propName + " elsewhere, as long as that heir’s share is satisfied in value from other assets.");
+  }).join(""),
+  net_profit_forfeiture_descriptive: () => {
+    const proceeding = state.marriage.status === "annulled" ? "annulment" : "legal separation";
+    return categoryCard("Property Forfeiture on Record", "consult",
+      "A forfeiture provision applies to this marriage",
+      "Because your " + proceeding + " decree found a party in bad faith, that party forfeits their share of the marriage’s net profits — but the exact amount depends on the property’s value back when the marriage began, which this tool can’t compute.",
+      "A lawyer can help establish the historical valuation needed here.");
+  },
+  void_union_bad_faith_not_computed: () => categoryCard("Void Marriage — Property Split", "estimated",
+    "Property from this union is presumed split equally (Art. 147)",
+    "Since neither of you had an impediment to marry the other, the law presumes an equal 50/50 split of property from this union. Any bad-faith forfeiture on top of that presumption isn’t computed here.",
+    "A lawyer can confirm whether forfeiture applies to your situation."),
+  void_union_art148_needs_review: () => categoryCard("Void Marriage — Needs Review", "consult",
+    "Property from this union used your own estimate, not a legal default",
+    "Because an impediment existed between you (most commonly, one of you was already validly married to someone else), the law requires proof of actual contribution — there’s no automatic 50/50 split, so we used the share you estimated.",
+    "A lawyer can help establish each party’s actual, provable contribution."),
+  legitimation_status_unclear: (occs) => occs.map((f) => {
+    const name = heirLabel(f.heirId);
+    return categoryCard("Legitimation Status Unclear", "consult",
+      name + "’s legitimation status needs confirming",
+      "Whether an impediment existed when " + name + " was conceived determines whether they’re treated as a legitimate or illegitimate heir — a difference that changes their share materially.",
+      "Confirm the facts with Getty before finalizing any plan.");
+  }).join(""),
+  no_modeled_heir_class: () => categoryCard("Heirs Beyond This Tool’s Scope", "consult",
+    "No children, spouse, or living parents indicated",
+    "Philippine law would pass your estate to more distant relatives (siblings, nephews, nieces) in this situation — a case this tool doesn’t model.",
+    "This needs a direct conversation with Getty rather than an automated estimate."),
+  forced_separation_applied: () => categoryCard("Property Regime Changed by Law", "estimated",
+    "A prior marriage wasn’t liquidated before you remarried",
+    "Because your previous marriage’s community property wasn’t formally settled before this one, Philippine law automatically places this marriage under complete separation of property — each of you owns what you individually acquire, with no default 50/50 split.",
+    "A lawyer can help you formally liquidate the prior marriage and confirm how this affects your current estate."),
 };
+
+const EJS_REASON_LABELS = { has_will: "you have an existing will", has_liabilities: "there are outstanding debts against the estate", has_minor_heir: "one or more heirs is a minor" };
+function ejsReasonSentence(result) {
+  if (result.ejsEligible) return "Yes — no will, no debts, no minor heirs on file.";
+  const reasons = (result.ejsIneligibleReasons || []).map((r) => EJS_REASON_LABELS[r]).filter(Boolean);
+  if (reasons.length === 0) return "No.";
+  if (reasons.length === 1) return "No — " + reasons[0] + ".";
+  return "No — " + reasons.slice(0, -1).join(", ") + " and " + reasons[reasons.length - 1] + ".";
+}
+
+function categoryLabel(cat) {
+  return { real_property: "Real estate", vehicle: "Vehicle", financial: "Financial account", business_shares: "Business shares", personal: "Personal property" }[cat] || cat;
+}
+function assetsSummaryCard() {
+  if (state.assets.length === 0 && state.liabilities.length === 0) return "";
+  let rows = state.assets.map((a) => {
+    const label = assetLabel(a, categoryLabel(a.category));
+    const fx = (a.currency && a.currency !== "PHP" && a.originalAmount)
+      ? ' <span style="color:var(--narra-soft); font-weight:400;">(' + esc(a.currency) + ' ' + Number(a.originalAmount).toLocaleString("en-US") + ')</span>' : '';
+    return '<div class="bar-label" style="margin-bottom:8px;"><span>' + esc(label) + fx + '</span><span>' + money(a.value.value) + '</span></div>';
+  }).join("");
+  rows += state.liabilities.map((l) =>
+    '<div class="bar-label" style="margin-bottom:8px; color:var(--consult);"><span>' + esc(l.description || "Debt") + '</span><span>−' + money(l.value) + '</span></div>'
+  ).join("");
+  return '<div class="category"><div class="cat-header"><p class="cat-title">Your Assets</p><span class="tag confirmed">Confirmed</span></div>' + rows + '</div>';
+}
+function insuranceSummaryCard() {
+  const ins = state.insurance;
+  if (!ins.hasInsurance) return "";
+  let html = '<div class="category"><div class="cat-header"><p class="cat-title">Life Insurance</p><span class="tag confirmed">Confirmed</span></div>' +
+    '<p class="cat-stat">' + money(Number(ins.totalCoverage) || 0) + ' total coverage</p>';
+  if (ins.beneficiaries.length > 0) {
+    html += ins.beneficiaries.map((b) => '<div class="bar-label" style="margin-bottom:6px;"><span>' + esc(b.label || "Unnamed beneficiary") + '</span><span>' + money(b.allocation) + '</span></div>').join("");
+  } else {
+    html += '<p class="cat-caption">No specific beneficiaries were entered.</p>';
+  }
+  html += '<p class="cat-caption" style="margin-top:8px;">Insurance proceeds with a named beneficiary generally pass directly to them, outside of the estate and legitime calculation on this page.</p></div>';
+  return html;
+}
 
 function buildEngineInput() {
   const m = state.marriage;
@@ -941,13 +1089,16 @@ function screenResults() {
   let html = '<div class="results"><div class="results-header"><p class="label">Estimated Total Exposure</p>' +
     '<div class="exposure-row"><p class="exposure-amount">' + money(result.estateTax) + '</p><div class="seal">家</div></div></div>';
 
+  html += assetsSummaryCard();
+
   html += '<div class="category"><div class="cat-header"><p class="cat-title">Estate Tax</p><span class="tag ' + (result.cpaCertificationRequired ? "consult" : "confirmed") + '">' + (result.cpaCertificationRequired ? "Needs Consultation" : "Estimated") + '</span></div>' +
     '<p class="cat-stat">' + money(result.grossEstate) + ' gross estate</p>' +
     '<p class="cat-caption">Net taxable estate: ' + money(result.netTaxableEstate) + '. Estate tax (6%): ' + money(result.estateTax) + '.' + (result.cpaCertificationRequired ? " Since your gross estate exceeds ₱5,000,000, a CPA-certified statement will be required regardless of tax due." : "") + '</p>' +
-    '<p class="cat-fix"><b>EJS eligible:</b> ' + (result.ejsEligible ? "Yes — no will, no debts, no minor heirs on file." : "No — a court settlement process will likely be required.") + '</p></div>';
+    '<p class="cat-fix"><b>EJS eligible:</b> ' + ejsReasonSentence(result) + '</p></div>';
 
   html += '<div class="category"><div class="cat-header"><p class="cat-title">Legitime &amp; Heirs</p><span class="tag confirmed">Confirmed</span></div>';
   if (result.legitime.mode === "intestate") {
+    html += '<p class="cat-caption">Since you have no will on file, Philippine law divides your estate under the intestate “unit method”: 2 units per legitimate/adopted/legitimated child, 1 unit per illegitimate child, and 2 units for a surviving eligible spouse — the total estate split proportionally.</p>';
     html += '<p class="cat-stat">' + result.legitime.entitlements.length + ' heir(s) — unit method</p>';
     result.legitime.entitlements.forEach((e) => {
       const receivedPct = e.grossEntitlement > 0 ? Math.min(100, Math.round((e.alreadyReceived / e.grossEntitlement) * 100)) : 0;
@@ -955,6 +1106,20 @@ function screenResults() {
         '<div class="bar-track"><div class="bar-received" style="width:' + receivedPct + '%"></div><div class="bar-remaining" style="width:' + (100 - receivedPct) + '%"></div></div></div>';
     });
     html += '<div class="bar-legend"><span><i class="dot" style="background:var(--narra-soft)"></i>Already received</span><span><i class="dot" style="background:var(--gold)"></i>Remaining share</span></div>';
+
+    if (state.heirs.spouseAlive === true && result.spouseEligible === false) {
+      const proceeding = state.marriage.status === "annulled" ? "an annulment" : "a legal separation";
+      html += '<p class="cat-fix" style="margin-top:14px;">Your spouse isn’t listed above because ' + proceeding + ' decree found them the offending party — this disqualification only runs one direction and doesn’t affect what you can leave to them by other means.</p>';
+    }
+
+    if (state.priorGifts.length > 0) {
+      const needed = result.legitime.totalNeededFromRemainingEstate;
+      const available = result.netHereditaryEstate;
+      const shortfallFlag = result.flags.find((f) => f.type === "insufficient_estate_to_equalize");
+      html += shortfallFlag
+        ? '<p class="cat-fix" style="margin-top:14px;">Because of gifts already given, HeirIQ checked whether what’s left is enough to equalize every heir: <b>No</b> — the remaining estate (' + money(available) + ') falls short of what’s still owed (' + money(needed) + ') by ' + money(shortfallFlag.shortfall) + '. See the flag below for what this means.</p>'
+        : '<p class="cat-fix" style="margin-top:14px;">Because of gifts already given, HeirIQ checked whether what’s left is enough to equalize every heir: <b>Yes</b> — the remaining estate (' + money(available) + ') covers what’s still owed (' + money(needed) + ').</p>';
+    }
   } else {
     const f = result.legitime.floor;
     html += '<p class="cat-stat">Testate — guaranteed minimum floor</p>' +
@@ -963,13 +1128,13 @@ function screenResults() {
   }
   html += '</div>';
 
-  const seen = {};
-  result.flags.forEach((f) => {
-    const copy = FLAG_COPY[f.type];
-    if (!copy || seen[f.type]) return;
-    seen[f.type] = true;
-    html += '<div class="category"><div class="cat-header"><p class="cat-title">' + copy.title + '</p><span class="tag ' + copy.tag + '">' + (copy.tag === "consult" ? "Needs Consultation" : "Estimated — Verify") + '</span></div>' +
-      '<p class="cat-stat">' + copy.stat + '</p><p class="cat-caption">' + copy.caption + '</p><p class="cat-fix"><b>Fix:</b> ' + copy.fix + '</p></div>';
+  html += insuranceSummaryCard();
+
+  const grouped = {};
+  result.flags.forEach((f) => { (grouped[f.type] = grouped[f.type] || []).push(f); });
+  Object.keys(grouped).forEach((type) => {
+    const renderer = FLAG_RENDERERS[type];
+    if (renderer) html += renderer(grouped[type], result);
   });
 
   html += '<p class="disclaimer">Not legal or tax advice. Estimates only — verify with a professional.</p>' +
@@ -1004,6 +1169,21 @@ function bindHandlers() {
   });
   app.querySelectorAll("[data-action]").forEach((el) => {
     el.addEventListener("click", handleAction);
+  });
+  // FX rate lookup is deliberately deferred to blur, not "input" — fetchFxRate() is async
+  // and re-renders the screen once it resolves, which replaces the DOM and steals focus.
+  // Firing it on every keystroke made typing a multi-digit amount require re-clicking the
+  // field before each digit; on blur it only happens once, after the user is done typing.
+  app.querySelectorAll('input[data-asset-field="originalAmount"]').forEach((el) => {
+    el.addEventListener("blur", () => {
+      const asset = findAsset(el.getAttribute("data-id"));
+      if (asset && asset.currency && asset.currency !== "PHP") fetchFxRate(asset);
+    });
+  });
+  // Same reasoning: refresh the "Allocated so far" summary on blur, not on every
+  // keystroke, so typing an allocation amount doesn't get interrupted by a re-render.
+  app.querySelectorAll('input[id="insuranceCoverage"], input[data-beneficiary-field="allocation"]').forEach((el) => {
+    el.addEventListener("blur", () => { render(); saveState(); });
   });
   const gate = document.getElementById("accessGateSubmit");
   if (gate) gate.addEventListener("click", submitAccessGate);
@@ -1053,7 +1233,7 @@ function handleFieldChange(e) {
     const asset = findAsset(id);
     if (field === "exactValue") { asset.value = { value: Number(el.value) || 0, confidence: "exact" }; }
     else if (field === "currency") { asset.currency = el.value; if (el.value !== "PHP") fetchFxRate(asset); render(); }
-    else if (field === "originalAmount") { asset.originalAmount = Number(el.value) || 0; if (asset.currency && asset.currency !== "PHP") fetchFxRate(asset); }
+    else if (field === "originalAmount") { asset.originalAmount = Number(el.value) || 0; }
     else { asset[field] = el.value; }
     return;
   }
@@ -1067,6 +1247,12 @@ function handleFieldChange(e) {
     const id = el.getAttribute("data-id"), field = el.getAttribute("data-gift-field");
     const gift = state.priorGifts.find((g) => g.id === id);
     gift[field] = field === "valueAtTimeOfGift" ? Number(el.value) || 0 : el.value;
+    return;
+  }
+  if (el.hasAttribute("data-beneficiary-field")) {
+    const id = el.getAttribute("data-id"), field = el.getAttribute("data-beneficiary-field");
+    const b = state.insurance.beneficiaries.find((x) => x.id === id);
+    b[field] = field === "allocation" ? Number(el.value) || 0 : el.value;
     return;
   }
   saveState();
@@ -1112,7 +1298,7 @@ function handleAction(e) {
 
   if (cmd === "addAsset") {
     const category = rest[0];
-    const asset = { id: uid(), category, value: { value: 0, confidence: "default" }, acquisitionTiming: "during_marriage_effort_income" };
+    const asset = { id: uid(), category, description: "", value: { value: 0, confidence: "default" }, acquisitionTiming: "during_marriage_effort_income" };
     if (category === "real_property") Object.assign(asset, { isFamilyHome: false, natureOfUse: "primary_residence", ownershipStructure: "direct" });
     if (category === "financial") Object.assign(asset, { currency: "PHP", originalAmount: 0, fxRate: null, fxRateDate: null, fxRateSource: null });
     if (category === "business_shares") Object.assign(asset, { businessValuationMethod: "not_sure" });
@@ -1135,6 +1321,8 @@ function handleAction(e) {
   if (cmd === "removeGift") { state.priorGifts = state.priorGifts.filter((g) => g.id !== rest[0]); render(); saveState(); return; }
 
   if (cmd === "setInsurance") { state.insurance.hasInsurance = rest[0] === "1"; render(); saveState(); return; }
+  if (cmd === "addBeneficiary") { state.insurance.beneficiaries.push({ id: uid(), label: "", allocation: 0 }); render(); saveState(); return; }
+  if (cmd === "removeBeneficiary") { state.insurance.beneficiaries = state.insurance.beneficiaries.filter((b) => b.id !== rest[0]); render(); saveState(); return; }
 }
 
 // =====================================================================================
@@ -1219,27 +1407,78 @@ function buildResultsPdfBase64() {
     const doc = new jsPDF();
     const r = lastResult || Engine.calculateEstate(buildEngineInput());
     let y = 20;
+    const line = (text, size) => {
+      if (size) doc.setFontSize(size);
+      if (y > 280) { doc.addPage(); y = 20; }
+      const wrapped = doc.splitTextToSize(text, 180);
+      doc.text(wrapped, 14, y);
+      y += 7 * wrapped.length;
+    };
+    const heading = (text) => { y += 4; line(text, 13); doc.setFontSize(11); };
+
     doc.setFontSize(18); doc.text("HeirIQ — Estate Assessment", 14, y); y += 10;
     doc.setFontSize(11);
-    doc.text("Gross estate: " + money(r.grossEstate), 14, y += 8);
-    doc.text("Net taxable estate: " + money(r.netTaxableEstate), 14, y += 8);
-    doc.text("Estate tax (6%): " + money(r.estateTax), 14, y += 8);
-    doc.text("CPA certification required: " + (r.cpaCertificationRequired ? "Yes" : "No"), 14, y += 8);
-    doc.text("EJS eligible: " + (r.ejsEligible ? "Yes" : "No"), 14, y += 8);
-    y += 4;
-    doc.setFontSize(13); doc.text("Legitime", 14, y += 8);
-    doc.setFontSize(11);
+    line("Gross estate: " + money(r.grossEstate));
+    line("Net taxable estate: " + money(r.netTaxableEstate));
+    line("Estate tax (6%): " + money(r.estateTax));
+    line("CPA certification required: " + (r.cpaCertificationRequired ? "Yes" : "No"));
+    line("EJS eligible: " + ejsReasonSentence(r));
+
+    if (state.assets.length > 0 || state.liabilities.length > 0) {
+      heading("Assets & Liabilities");
+      state.assets.forEach((a) => { line(assetLabel(a, categoryLabel(a.category)) + ": " + money(a.value.value)); });
+      state.liabilities.forEach((l) => { line((l.description || "Debt") + ": -" + money(l.value)); });
+    }
+
+    heading("Legitime");
     if (r.legitime.mode === "intestate") {
-      r.legitime.entitlements.forEach((e) => { doc.text((e.label || e.heirType) + ": " + money(e.grossEntitlement), 14, y += 7); });
+      line("Method: intestate unit method (no will on file) — 2 units per legitimate/adopted/legitimated child, 1 per illegitimate child, 2 for a surviving eligible spouse.");
+      r.legitime.entitlements.forEach((e) => { line((e.label || e.heirType) + ": " + money(e.grossEntitlement)); });
+      if (state.heirs.spouseAlive === true && r.spouseEligible === false) {
+        const proceeding = state.marriage.status === "annulled" ? "annulment" : "legal separation";
+        line("Spouse excluded: your " + proceeding + " decree found them the offending party.");
+      }
+      if (state.priorGifts.length > 0) {
+        const shortfallFlag = r.flags.find((f) => f.type === "insufficient_estate_to_equalize");
+        line("Collation check (prior gifts factored in): " + (shortfallFlag
+          ? "shortfall of " + money(shortfallFlag.shortfall) + " — remaining estate is not enough to equalize every heir."
+          : "passed — the remaining estate covers what every heir is still owed."));
+      }
     } else {
       const f = r.legitime.floor;
-      doc.text("Each legitimate/adopted child floor: " + money(f.perLegitimateOrAdoptedChildFloor), 14, y += 7);
-      doc.text("Spouse floor: " + money(f.spouseFloor), 14, y += 7);
-      doc.text("Illegitimate child floor: " + money(f.perIllegitimateChildFloor), 14, y += 7);
+      line("Method: testate — guaranteed minimum floor only (this tool cannot verify your actual will's distribution).");
+      line("Each legitimate/adopted/legitimated child floor: " + money(f.perLegitimateOrAdoptedChildFloor));
+      line("Spouse floor: " + money(f.spouseFloor));
+      line("Illegitimate child floor: " + money(f.perIllegitimateChildFloor));
+      line("Free portion: " + money(f.freePortion));
     }
-    y += 4;
+
+    if (state.insurance.hasInsurance) {
+      heading("Life Insurance");
+      line("Total coverage: " + money(Number(state.insurance.totalCoverage) || 0));
+      state.insurance.beneficiaries.forEach((b) => { line((b.label || "Unnamed beneficiary") + ": " + money(b.allocation)); });
+      line("Insurance proceeds with a named beneficiary generally pass directly to them, outside of the estate and legitime calculation above.");
+    }
+
+    const grouped = {};
+    r.flags.forEach((f) => { (grouped[f.type] = grouped[f.type] || []).push(f); });
+    const flagTypes = Object.keys(grouped);
+    if (flagTypes.length > 0) {
+      heading("Flags for Review");
+      flagTypes.forEach((type) => {
+        const html = FLAG_RENDERERS[type] ? FLAG_RENDERERS[type](grouped[type], r) : "";
+        const cards = html.split('<div class="category">').slice(1); // one fragment per card
+        cards.forEach((card) => {
+          const title = (card.match(/<p class="cat-title">(.*?)<\/p>/) || [])[1] || "";
+          const caption = (card.match(/<p class="cat-caption">(.*?)<\/p>/) || [])[1] || "";
+          line("- " + title + (caption ? ": " + caption.replace(/<[^>]+>/g, "") : ""));
+        });
+      });
+    }
+
+    y += 6;
     doc.setFontSize(9);
-    doc.text("Not legal or tax advice. Estimates only — verify with a professional.", 14, y += 10);
+    line("Not legal or tax advice. Estimates only — verify with a professional.");
     const datauri = doc.output("datauristring");
     return datauri.split(",")[1];
   } catch (e) {

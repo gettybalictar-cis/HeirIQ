@@ -9,3 +9,15 @@ import { hasAnyMinorHeir } from "./heirs.js";
 export function isEJSEligible({ hasWill, liabilities = [], heirs }) {
   return !hasWill && liabilities.length === 0 && !hasAnyMinorHeir(heirs);
 }
+
+/**
+ * The specific reason(s) EJS is unavailable, so the Results screen can say WHY rather
+ * than just showing "No". Empty array when eligible.
+ */
+export function ejsIneligibilityReasons({ hasWill, liabilities = [], heirs }) {
+  const reasons = [];
+  if (hasWill) reasons.push("has_will");
+  if (liabilities.length > 0) reasons.push("has_liabilities");
+  if (hasAnyMinorHeir(heirs)) reasons.push("has_minor_heir");
+  return reasons;
+}
