@@ -29,7 +29,6 @@
     --white:#FFFFFF;
   }
   *{box-sizing:border-box;}
-  html,body{ height:100%; }
   body{
     margin:0;
     background:#DDD6C6;
@@ -48,6 +47,7 @@
     background:var(--ivory);
     border-radius:18px;
     overflow:hidden;
+    flex-shrink:0;
     box-shadow:0 20px 50px rgba(90,58,34,0.18);
     border:1px solid var(--hairline);
   }
@@ -570,6 +570,35 @@ function screenConsentNotice() {
 }
 
 // ---- Section A: Marital History ------------------------------------------------------
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+// Plain Month + Year <select> dropdowns instead of a native <input type=date> — the
+// native date input's scroll-wheel year picker is slow and fiddly on mobile. Stored as
+// "YYYY-MM-01" (day fixed to the 1st, since only month/year are captured); this only
+// affects ACP/CPG classification in the single edge case of a marriage that fell in
+// August 1988 itself, right around the Aug 3 1988 regime-change date.
+function marriageDateFields(m) {
+  const parts = (m.marriageDate || "").split("-");
+  const selectedYear = parts[0] || "";
+  const selectedMonth = parts[1] || "";
+  const currentYear = new Date().getFullYear();
+
+  let yearOptions = '<option value="">Year…</option>';
+  for (let yr = currentYear; yr >= currentYear - 100; yr--) {
+    yearOptions += '<option value="' + yr + '"' + (String(yr) === selectedYear ? " selected" : "") + '>' + yr + '</option>';
+  }
+  let monthOptions = '<option value="">Month…</option>';
+  MONTH_NAMES.forEach((name, i) => {
+    const val = String(i + 1).padStart(2, "0");
+    monthOptions += '<option value="' + val + '"' + (val === selectedMonth ? " selected" : "") + '>' + name + '</option>';
+  });
+
+  return '<div class="child-card-row" style="margin-top:16px;">' +
+    '<div class="field"><label>Marriage month</label><select id="marriageMonth">' + monthOptions + '</select></div>' +
+    '<div class="field"><label>Marriage year</label><select id="marriageYear">' + yearOptions + '</select></div>' +
+    '</div>';
+}
+
 function screenSectionA() {
   const m = state.marriage;
   const statuses = ["single", "married", "widowed", "annulled", "void", "legally_separated"];
@@ -580,7 +609,7 @@ function screenSectionA() {
     '<div class="chip-row">' + statuses.map((s) => '<div class="chip' + (m.status === s ? " selected" : "") + '" data-action="setStatus:' + s + '">' + statusLabels[s] + '</div>').join("") + '</div>';
 
   if (m.status !== "single") {
-    html += '<div class="field" style="margin-top:16px;"><label>Marriage date</label><input type="date" id="marriageDate" value="' + esc(m.marriageDate) + '"></div>';
+    html += marriageDateFields(m);
     html += '<div class="minor-row" style="margin-top:14px;"><span>Prenuptial agreement?</span><div class="minor-yn">' +
       ynButtons("hasPrenup", m.hasPrenup === true, m.hasPrenup === false) + '</div></div>';
     if (m.hasPrenup) {
@@ -985,7 +1014,12 @@ function bindHandlers() {
 function handleFieldChange(e) {
   const el = e.target;
   if (el.id === "accessTokenInput") { state.accessToken = el.value; return; }
-  if (el.id === "marriageDate") { state.marriage.marriageDate = el.value; return; }
+  if (el.id === "marriageMonth" || el.id === "marriageYear") {
+    const month = document.getElementById("marriageMonth").value;
+    const year = document.getElementById("marriageYear").value;
+    state.marriage.marriageDate = (month && year) ? (year + "-" + month + "-01") : "";
+    return;
+  }
   if (el.id === "prenupRegime") { state.marriage.prenupRegime = el.value; return; }
   if (el.id === "voidGround") { state.marriage.voidGround = el.value; return; }
   if (el.id === "voidImpediment") { state.marriage.voidImpediment = el.value; return; }
